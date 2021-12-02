@@ -2,6 +2,7 @@
 
 cmake_minimum_required(VERSION "3.20" )
 
+project(alpha-emu LANGUAGES CXX)
 
 #export compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS "YES")
@@ -9,13 +10,12 @@ set(CMAKE_BUILD_TYPE "Debug")
 
 #find boost for test
 #BOOST_ROOT
-set(BOOST_ROOT "thirdparty/boost_1_75_0")
-set(BOOST_NO_SYSTEM_PATHS "NO")
-find_package(Boost 1.75.0 REQUIRED)
-find_package(Threads)
-#enable_testing()
+#set(BOOST_ROOT "thirdparty/boost_1_75_0")
+#set(BOOST_NO_SYSTEM_PATHS "NO")
+#find_package(Boost 1.75.0 REQUIRED)
+#find_package(Threads)
+enable_testing()
+
 
 add_subdirectory("src")
-project(alpha-emu LANGUAGES CXX)
-
-add_executable(alpha-emu ./core/clock.hpp)
+add_subdirectory("test")
