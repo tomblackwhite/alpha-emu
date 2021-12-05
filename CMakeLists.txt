@@ -6,7 +6,7 @@ project(alpha-emu LANGUAGES CXX)
 
 #export compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS "YES")
-set(CMAKE_BUILD_TYPE "Debug")
+#set(CMAKE_BUILD_TYPE "Debug")
 
 #find boost for test
 #BOOST_ROOT
