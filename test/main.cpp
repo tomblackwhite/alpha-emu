@@ -1,4 +1,4 @@
-#include "clock.hpp"
+#include "clock.hh"
 #include <chrono>
 using namespace std::chrono;
 #define BOOST_TEST_MODULE My Test
