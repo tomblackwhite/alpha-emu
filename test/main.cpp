@@ -1,4 +1,5 @@
 #include "clock.hh"
+#include "cpu.hh"
 #include <chrono>
 using namespace std::chrono;
 #define BOOST_TEST_MODULE My Test
@@ -22,4 +23,14 @@ BOOST_AUTO_TEST_CASE(first_test) {
   int i = 1;
   BOOST_TEST(i);
   BOOST_TEST(test);
+}
+
+BOOST_AUTO_TEST_CASE(second_test){
+  CPU cpu;
+  cpu.m_AC=0x80;
+  cpu.m_instructionSet[0x69].m_executor(0x80);
+
+  BOOST_TEST_MESSAGE(cpu.m_SR.to_string());
+  BOOST_TEST(1);
+
 }

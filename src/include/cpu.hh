@@ -30,7 +30,7 @@ struct Instruction{
 ** 的pc count
 */
 class CPU {
-private:
+public:
   // memory instructions
 
   /*
@@ -83,6 +83,31 @@ public:
   uint8_t GetValue() { return 0; }
 
 public:
-  CPU();
+  CPU(){
+    InitInstructionSet();
+  };
   void test() {}
+
+private:
+  auto NegativeFlag(){
+    return m_SR[7];
+  }
+  auto OverflowFlag(){
+    return m_SR[6];
+  }
+  auto BreakFlag(){
+    return m_SR[4];
+  }
+  auto DecimalFlag(){
+    return m_SR[3];
+  }
+  auto InterruptFlag(){
+    return m_SR[2];
+  }
+  auto ZeroFlag(){
+    return m_SR[1];
+  }
+  auto CarryFlag(){
+    return m_SR[0];
+  }
 };
