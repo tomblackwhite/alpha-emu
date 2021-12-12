@@ -7,6 +7,37 @@
 
 using std::uint16_t;
 using std::uint8_t;
+
+/* 寻址方式 6502为小端 */
+enum class AddressMode{
+
+
+  // accumulator impiled single byte instruction
+  // operand is AC (implied single byte instruction)
+  accumulator,
+
+  //operand is address $HHLL
+  absolute,
+
+  //OPC $LLHH,X operand is address;
+  //effective address is address incremented by X with carry
+  absolute_x,
+
+  //OPC $LLHH,Y	operand is address;
+  //effective address is address incremented by Y with carry **
+  absolute_y,
+
+  //OPC #$BB	operand is byte BB
+  immediate,
+
+  //OPC	operand implied
+  implied,
+
+  //OPC ($LLHH)	operand is address;
+  //effective address is contents of word at address: C.w($HHLL)
+  indirect
+
+};
 //指令
 struct Instruction{
   //周期数
@@ -30,7 +61,8 @@ struct Instruction{
 ** 的pc count
 */
 class CPU {
-public:
+
+private:
   // memory instructions
 
   /*
