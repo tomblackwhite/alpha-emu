@@ -78,6 +78,8 @@ struct Instruction {
   //指令的值
   uint8_t m_operatorCode;
 
+  AddressMode m_addressMode;
+
   //执行实际的命令并设置相关寄存器
   //在初始化时自动捕获当前上下文变量
   std::function<void(uint8_t memoryValue)> m_executor;
@@ -130,7 +132,7 @@ private:
   std::vector<uint8_t> m_memory;
 
   /*指令集*/
-  std::unordered_map<uint8_t, Instruction> m_instructionSet;
+  std::unordered_map<uint8_t, Instruction> m_instructionMap;
 
 public:
   //初始化指令集设置相关参数
