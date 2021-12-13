@@ -35,8 +35,37 @@ enum class AddressMode{
 
   //OPC ($LLHH)	operand is address;
   //effective address is contents of word at address: C.w($HHLL)
-  indirect
+  indirect,
 
+  //OPC ($LL,X)	operand is zeropage address;
+  //effective address is word in (LL + X, LL + X + 1), inc. without carry: C.w($00LL + X)
+  //An 8-bit zero-page address and the X register are added, without carry
+  //(if the addition overflows, the address wraps around within page 0).
+  x_indirect,
+
+  //OPC ($LL),Y	operand is zeropage address;
+  //effective address is word in (LL, LL + 1) incremented by Y with carry: C.w($00LL) + Y
+  indirect_y,
+
+  //OPC $BB	branch target is PC + signed offset BB ***
+  relative,
+
+  //OPC $LL	operand is zeropage address (hi-byte is zero, address = $00LL)
+  zeropage,
+
+  //OPC $LL,X	operand is zeropage address;
+  //effective address is address incremented by X without carry **
+  zeropage_x,
+
+  //OPC $LL,Y	operand is zeropage address;
+  //effective address is address incremented by Y without carry **
+  zeropage_y
+
+  /*
+   * 所以不带进位的加法，不会影响到地址位的高位。
+   * 通常来说, increments of 16-bit addresses include a carry,
+   * increments of zeropage addresses don't.
+   */
 };
 //指令
 struct Instruction{
