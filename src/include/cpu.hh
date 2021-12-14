@@ -2,12 +2,13 @@
 #include <bitset>
 #include <cstdint>
 #include <functional>
-#include <sys/endian.h>
 #include <unordered_map>
 #include <vector>
 
 using std::uint16_t;
 using std::uint8_t;
+using std::int8_t;
+using std::int16_t;
 
 /* 寻址方式 6502为小端 */
 enum class AddressMode {
@@ -70,6 +71,13 @@ enum class AddressMode {
    * 这个和累加器的carry bit 无关
    */
 };
+
+enum class InstructionType {
+  ADC,AND,ASL,BCC,BCS,BEQ,BIT,BMI,BNE,BPL,BRK,BVC,BVS,CLC,CLD,CLI,CLV,CMP,
+  CPX,CPY,DEC,DEX,DEY,EOR,INC,INX,INY,JMP,JSR,LDA,LDX,LDY,LSR,NOP,ORA,PHA,
+  PHP,PLA,PLP,ROL,ROR,RTI,RTS,SBC,SEC,SED,SEI,STA,STX,STY,TAX,TAY,TSX,TXA,
+  TXS,TYA
+};
 //指令
 struct Instruction {
   //周期数
@@ -80,9 +88,10 @@ struct Instruction {
 
   AddressMode m_addressMode;
 
+  InstructionType m_instructionType;
   //执行实际的命令并设置相关寄存器
   //在初始化时自动捕获当前上下文变量
-  std::function<void(uint8_t memoryValue)> m_executor;
+  std::function<void(uint16_t &memoryValue)> m_executor;
 };
 
 /*
@@ -161,95 +170,96 @@ private:
   /*寻址方式*/
   /*获取指令使用的有效地址或者能直接使用的值*/
   uint16_t GetAddressOrMemoryValue(AddressMode mode) {
-    uint16_t result=0;
+    uint16_t result = 0;
     switch (mode) {
     case AddressMode::accumulator: {
       //取累加器中的值
-      result=m_X;
+      result = m_X;
       break;
     }
-    case AddressMode::absolute:{
+    case AddressMode::absolute: {
       //取有效地址
-      result=m_memory[m_PC]+(m_memory[m_PC+1]<<4);
-      m_PC+=2;
+      result = m_memory[m_PC] + (m_memory[m_PC + 1] << 4);
+      m_PC += 2;
       break;
     }
-    case AddressMode::absolute_x:{
+    case AddressMode::absolute_x: {
       //取有效地址
-      result=m_memory[m_PC]+(m_memory[m_PC+1]<<4)+m_X;
-      m_PC+=2;
+      result = m_memory[m_PC] + (m_memory[m_PC + 1] << 4) + m_X;
+      m_PC += 2;
       break;
     }
-    case AddressMode::absolute_y:{
+    case AddressMode::absolute_y: {
       //取有效地址
-      result=m_memory[m_PC]+(m_memory[m_PC+1]<<4)+m_Y;
-      m_PC+=2;
+      result = m_memory[m_PC] + (m_memory[m_PC + 1] << 4) + m_Y;
+      m_PC += 2;
       break;
     }
-    case AddressMode::immediate:{
+    case AddressMode::immediate: {
       //直接取值
-      result=m_memory[m_PC];
-      m_PC+=1;
+      result = m_memory[m_PC];
+      m_PC += 1;
       break;
     }
-    case AddressMode::implied:{
+    case AddressMode::implied: {
       //直接返回
       break;
     }
-    case AddressMode::indirect:{
+    case AddressMode::indirect: {
       //取有效地址
-      uint16_t middleAddress=m_memory[m_PC]+(m_memory[m_PC+1]<<4);
-      result= m_memory[middleAddress]+(m_memory[middleAddress+1]<<4);
-      m_PC+=2;
+      uint16_t middleAddress = m_memory[m_PC] + (m_memory[m_PC + 1] << 4);
+      result = m_memory[middleAddress] + (m_memory[middleAddress + 1] << 4);
+      m_PC += 2;
       break;
     }
-    case AddressMode::x_indirect:{
+    case AddressMode::x_indirect: {
       //取有效地址
-      uint16_t middleAddress=m_memory[m_PC]+m_X;
-      middleAddress&=0xFF;
-      result= m_memory[middleAddress]+(m_memory[middleAddress+1]<<4);
-      m_PC+=1;
-      break;
-
-    }
-    case AddressMode::indirect_y:{
-      //取有效地址
-      uint16_t middleAddress=m_memory[m_PC]+(m_memory[m_PC+1]<<4);
-      result= middleAddress+m_Y;
-      m_PC+=1;
+      uint16_t middleAddress = m_memory[m_PC] + m_X;
+      middleAddress &= 0xFF;
+      result = m_memory[middleAddress] + (m_memory[middleAddress + 1] << 4);
+      m_PC += 1;
       break;
     }
-    case AddressMode::relative:{
+    case AddressMode::indirect_y: {
+      //取有效地址
+      uint16_t middleAddress = m_memory[m_PC] + (m_memory[m_PC + 1] << 4);
+      result = middleAddress + m_Y;
+      m_PC += 1;
+      break;
+    }
+    case AddressMode::relative: {
       //取偏移量
-      result=m_memory[m_PC];
-      m_PC+=1;
+      result = m_memory[m_PC];
+      m_PC += 1;
       break;
     }
-    case AddressMode::zeropage:{
+    case AddressMode::zeropage: {
       //取地址
-      result=m_memory[m_PC];
-      m_PC+=1;
+      result = m_memory[m_PC];
+      m_PC += 1;
       break;
     }
-    case AddressMode::zeropage_x:{
+    case AddressMode::zeropage_x: {
       //取地址
-      result=m_memory[m_PC]+m_X;
-      result&=0xFF;
-      m_PC+=1;
+      result = m_memory[m_PC] + m_X;
+      result &= 0xFF;
+      m_PC += 1;
       break;
     }
-    case AddressMode::zeropage_y:{
+    case AddressMode::zeropage_y: {
       //取地址
-      result=m_memory[m_PC]+m_Y;
-      result&=0xFF;
-      m_PC+=1;
+      result = m_memory[m_PC] + m_Y;
+      result &= 0xFF;
+      m_PC += 1;
       break;
-
     }
-    default:{
+    default: {
       static_assert(true, "未知的寻址类型");
     }
     }
     return result;
   }
+
+  /*获取根据寻址模式获取的值，获取指令执行时需要传的参数。*/
+  uint16_t GetInstructionParameter(uint16_t addressModeValue) {}
 };
