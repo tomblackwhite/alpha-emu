@@ -1,5 +1,4 @@
 #include "../include/cpu.hh"
-#include <sys/endian.h>
 
 void CPU::InitInstructionSet() {
 
@@ -150,4 +149,11 @@ void CPU::InitInstructionSet() {
       {0x24, {3, 0x24, AddressMode::zeropage, InstructionType::BIT, bitOP}});
   m_instructionMap.insert(
       {0x2C, {4, 0x2C, AddressMode::absolute, InstructionType::BIT, bitOP}});
+}
+
+
+void CPU::Run(){
+  while (true) {
+    auto op=m_memory[0];
+  }
 }

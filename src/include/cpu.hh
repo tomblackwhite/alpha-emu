@@ -147,6 +147,8 @@ public:
   //初始化指令集设置相关参数
   void InitInstructionSet();
 
+  //开始执行内存中的代码
+  void Run();
   /*
    * 需要根据寻址模式获取值并且递增当前的program counter
    * 首先获取opertor code 然后根据operator code 判断
@@ -261,5 +263,5 @@ private:
   }
 
   /*获取根据寻址模式获取的值，获取指令执行时需要传的参数。*/
-  uint16_t GetInstructionParameter(uint16_t addressModeValue) {}
+  uint16_t GetInstructionParameter(uint16_t addressModeValue) { return 0;}
 };
