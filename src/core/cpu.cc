@@ -149,11 +149,685 @@ void CPU::InitInstructionSet() {
       {0x24, {3, 0x24, AddressMode::zeropage, InstructionType::BIT, bitOP}});
   m_instructionMap.insert(
       {0x2C, {4, 0x2C, AddressMode::absolute, InstructionType::BIT, bitOP}});
+
+  auto bmiOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x30, {2, 0x30, AddressMode::relative, InstructionType::BMI, bmiOP}});
+
+  auto bneOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xD0, {2, 0xD0, AddressMode::relative, InstructionType::BNE, bneOP}});
+
+  auto bplOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x10, {2, 0x10, AddressMode::relative, InstructionType::BPL, bplOP}});
+
+  auto brkOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x00, {7, 0x00, AddressMode::implied, InstructionType::BRK, brkOP}});
+
+  auto bvcOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x50, {2, 0x50, AddressMode::relative, InstructionType::BVC, bvcOP}});
+
+  auto bvsOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x70, {2, 0x70, AddressMode::relative, InstructionType::BVS, bvsOP}});
+
+  auto clcOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x18, {2, 0x18, AddressMode::implied, InstructionType::CLC, clcOP}});
+
+  auto cldOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xd8, {2, 0xd8, AddressMode::implied, InstructionType::CLD, cldOP}});
+
+  auto cliOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x58, {2, 0x58, AddressMode::implied, InstructionType::CLI, cliOP}});
+
+  auto clvOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xB8, {2, 0xB8, AddressMode::implied, InstructionType::CLV, clvOP}});
+
+  auto cmpOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xC9, {2, 0xC9, AddressMode::immediate, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xC5, {3, 0xC5, AddressMode::zeropage, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xD5, {4, 0xD5, AddressMode::zeropage_x, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xCD, {4, 0xCD, AddressMode::absolute, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xDD, {4, 0xDD, AddressMode::absolute_x, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xD9, {4, 0xD9, AddressMode::absolute_y, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xC1, {6, 0xC1, AddressMode::x_indirect, InstructionType::CMP, cmpOP}});
+
+  m_instructionMap.insert(
+      {0xD1, {5, 0xD1, AddressMode::indirect_y, InstructionType::CMP, cmpOP}});
+
+  auto cpxOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xe0, {2, 0xe0, AddressMode::immediate, InstructionType::CPX, cpxOP}});
+
+  m_instructionMap.insert(
+      {0xe4, {3, 0xe4, AddressMode::zeropage, InstructionType::CPX, cpxOP}});
+
+  m_instructionMap.insert(
+      {0xec, {4, 0xec, AddressMode::absolute, InstructionType::CPX, cpxOP}});
+
+  auto cpyOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xc0, {2, 0xc0, AddressMode::immediate, InstructionType::CPY, cpyOP}});
+
+  m_instructionMap.insert(
+      {0xc4, {3, 0xc4, AddressMode::zeropage, InstructionType::CPY, cpyOP}});
+
+  m_instructionMap.insert(
+      {0xcc, {4, 0xcc, AddressMode::absolute, InstructionType::CPY, cpyOP}});
+
+  auto decOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xC6, {5, 0xC6, AddressMode::zeropage, InstructionType::DEC, decOP}});
+
+  m_instructionMap.insert(
+      {0xD6, {6, 0xD6, AddressMode::zeropage_x, InstructionType::DEC, decOP}});
+
+  m_instructionMap.insert(
+      {0xCE, {6, 0xCE, AddressMode::absolute, InstructionType::DEC, decOP}});
+
+  m_instructionMap.insert(
+      {0xDE, {7, 0xDE, AddressMode::absolute_x, InstructionType::DEC, decOP}});
+
+  auto dexOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xCA, {2, 0xCA, AddressMode::implied, InstructionType::DEX, dexOP}});
+
+  auto deyOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x88, {2, 0x88, AddressMode::implied, InstructionType::DEY, deyOP}});
+
+  auto eorOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x49, {2, 0x49, AddressMode::immediate, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x45, {3, 0x45, AddressMode::zeropage, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x55, {4, 0x55, AddressMode::zeropage_x, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x4D, {4, 0x4D, AddressMode::absolute, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x5D, {4, 0x5D, AddressMode::absolute_x, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x59, {4, 0x59, AddressMode::absolute_x, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x41, {6, 0x41, AddressMode::x_indirect, InstructionType::EOR, eorOP}});
+
+  m_instructionMap.insert(
+      {0x51, {5, 0x51, AddressMode::indirect_y, InstructionType::EOR, eorOP}});
+
+  auto incOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xE6, {5, 0xE6, AddressMode::zeropage, InstructionType::INC, incOP}});
+
+  m_instructionMap.insert(
+      {0xF6, {6, 0xF6, AddressMode::zeropage_x, InstructionType::INC, incOP}});
+
+  m_instructionMap.insert(
+      {0xEE, {6, 0xEE, AddressMode::absolute, InstructionType::INC, incOP}});
+
+  m_instructionMap.insert(
+      {0xFE, {7, 0xFE, AddressMode::absolute_x, InstructionType::INC, incOP}});
+
+  auto inxOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xE8, {2, 0xE8, AddressMode::implied, InstructionType::INX, inxOP}});
+
+  auto inyOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xC8, {2, 0xC8, AddressMode::implied, InstructionType::INY, inyOP}});
+
+  auto jmpOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x4C, {3, 0x4C, AddressMode::absolute, InstructionType::JMP, jmpOP}});
+
+  m_instructionMap.insert(
+      {0x6C, {5, 0x6C, AddressMode::indirect, InstructionType::JMP, jmpOP}});
+
+  auto jsrOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x20, {6, 0x20, AddressMode::absolute, InstructionType::JSR, jsrOP}});
+
+  auto ldaOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xA9, {2, 0xA9, AddressMode::immediate, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xA5, {3, 0xA5, AddressMode::zeropage, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xB5, {4, 0xB5, AddressMode::zeropage_x, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xAD, {4, 0xAD, AddressMode::absolute, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xBD, {4, 0xBD, AddressMode::absolute_x, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xB9, {4, 0xB9, AddressMode::absolute_y, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xA1, {6, 0xA1, AddressMode::x_indirect, InstructionType::LDA, ldaOP}});
+
+  m_instructionMap.insert(
+      {0xB1, {5, 0xB1, AddressMode::indirect_y, InstructionType::LDA, ldaOP}});
+
+  auto ldxOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xA2, {2, 0xA2, AddressMode::immediate, InstructionType::LDX, ldxOP}});
+
+  m_instructionMap.insert(
+      {0xA6, {3, 0xA6, AddressMode::zeropage, InstructionType::LDX, ldxOP}});
+
+  m_instructionMap.insert(
+      {0xB6, {4, 0xB6, AddressMode::zeropage, InstructionType::LDX, ldxOP}});
+
+  m_instructionMap.insert(
+      {0xAE, {4, 0xAE, AddressMode::absolute, InstructionType::LDX, ldxOP}});
+
+  m_instructionMap.insert(
+      {0xBE, {4, 0xBE, AddressMode::absolute_y, InstructionType::LDX, ldxOP}});
+
+  auto ldyOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xA0, {2, 0xA0, AddressMode::immediate, InstructionType::LDY, ldyOP}});
+
+  m_instructionMap.insert(
+      {0xA4, {3, 0xA4, AddressMode::zeropage, InstructionType::LDY, ldyOP}});
+
+  m_instructionMap.insert(
+      {0xB4, {4, 0xB4, AddressMode::zeropage_x, InstructionType::LDY, ldyOP}});
+
+  m_instructionMap.insert(
+      {0xAC, {4, 0xAC, AddressMode::absolute, InstructionType::LDY, ldyOP}});
+
+  m_instructionMap.insert(
+      {0xBC, {4, 0xBC, AddressMode::absolute_x, InstructionType::LDY, ldyOP}});
+
+  auto lsrOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x4A, {2, 0x4A, AddressMode::accumulator, InstructionType::LSR, lsrOP}});
+
+  m_instructionMap.insert(
+      {0x46, {5, 0x46, AddressMode::zeropage, InstructionType::LSR, lsrOP}});
+
+  m_instructionMap.insert(
+      {0x56, {6, 0x56, AddressMode::zeropage_x, InstructionType::LSR, lsrOP}});
+
+  m_instructionMap.insert(
+      {0x4E, {6, 0x4E, AddressMode::absolute, InstructionType::LSR, lsrOP}});
+
+  m_instructionMap.insert(
+      {0x5E, {7, 0x5E, AddressMode::absolute_x, InstructionType::LSR, lsrOP}});
+
+  auto nopOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xEA, {2, 0xEA, AddressMode::implied, InstructionType::NOP, nopOP}});
+
+  auto oraOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x09, {2, 0x09, AddressMode::immediate, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x05, {3, 0x05, AddressMode::zeropage, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x15, {4, 0x15, AddressMode::zeropage_x, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x0D, {4, 0x0D, AddressMode::absolute, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x1D,
+       {4 , 0x1D, AddressMode::absolute_x, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x19,
+       {4 , 0x19, AddressMode::absolute_y, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x01, {6, 0x01, AddressMode::x_indirect, InstructionType::ORA, oraOP}});
+
+  m_instructionMap.insert(
+      {0x11,
+       {5 , 0x11, AddressMode::indirect_y, InstructionType::ORA, oraOP}});
+
+  auto phaOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x48, {3, 0x48, AddressMode::implied, InstructionType::PHA, phaOP}});
+
+  auto phpOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x08, {3, 0x08, AddressMode::implied, InstructionType::PHP, phpOP}});
+
+  auto plaOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x68, {4, 0x68, AddressMode::implied, InstructionType::PLA, plaOP}});
+
+  auto plpOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x28, {4, 0x28, AddressMode::implied, InstructionType::PLP, plpOP}});
+
+  auto rolOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x2A, {2, 0x2A, AddressMode::accumulator, InstructionType::ROL, rolOP}});
+
+  m_instructionMap.insert(
+      {0x26, {5, 0x26, AddressMode::zeropage, InstructionType::ROL, rolOP}});
+
+  m_instructionMap.insert(
+      {0x36, {6, 0x36, AddressMode::zeropage_x, InstructionType::ROL, rolOP}});
+
+  m_instructionMap.insert(
+      {0x2E, {6, 0x2E, AddressMode::absolute, InstructionType::ROL, rolOP}});
+
+  m_instructionMap.insert(
+      {0x3E, {7, 0x3E, AddressMode::absolute_x, InstructionType::ROL, rolOP}});
+
+  auto rorOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x6A, {2, 0x6A, AddressMode::accumulator, InstructionType::ROR, rorOP}});
+
+  m_instructionMap.insert(
+      {0x66, {5, 0x66, AddressMode::zeropage, InstructionType::ROR, rorOP}});
+
+  m_instructionMap.insert(
+      {0x76, {6, 0x76, AddressMode::zeropage_x, InstructionType::ROR, rorOP}});
+
+  m_instructionMap.insert(
+      {0x6E, {6, 0x6E, AddressMode::absolute, InstructionType::ROR, rorOP}});
+
+  m_instructionMap.insert(
+      {0x7E, {7, 0x7E, AddressMode::absolute_x, InstructionType::ROR, rorOP}});
+
+  auto rtiOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x40, {6, 0x40, AddressMode::implied, InstructionType::RTI, rtiOP}});
+
+  auto rtsOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x60, {6, 0x60, AddressMode::implied, InstructionType::RTS, rtsOP}});
+
+  auto sbcOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xE9, {2, 0xE9, AddressMode::immediate, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xE5, {3, 0xE5, AddressMode::zeropage, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xF5, {4, 0xF5, AddressMode::zeropage_x, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xED, {4, 0xED, AddressMode::absolute, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xFD,
+       {4 , 0xFD, AddressMode::absolute_x, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xF9,
+       {4 , 0xF9, AddressMode::absolute_y, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xE1, {6, 0xE1, AddressMode::x_indirect, InstructionType::SBC, sbcOP}});
+
+  m_instructionMap.insert(
+      {0xF1,
+       {5 , 0xF1, AddressMode::indirect_y, InstructionType::SBC, sbcOP}});
+
+  auto secOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x38, {2, 0x38, AddressMode::implied, InstructionType::SEC, secOP}});
+
+  auto sedOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xF8, {2, 0xF8, AddressMode::implied, InstructionType::SED, sedOP}});
+
+  auto seiOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x78, {2, 0x78, AddressMode::implied, InstructionType::SEI, seiOP}});
+
+  auto staOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x85, {3, 0x85, AddressMode::zeropage, InstructionType::STA, staOP}});
+
+  m_instructionMap.insert(
+      {0x95, {4, 0x95, AddressMode::zeropage_x, InstructionType::STA, staOP}});
+
+  m_instructionMap.insert(
+      {0x8D, {4, 0x8D, AddressMode::absolute, InstructionType::STA, staOP}});
+
+  m_instructionMap.insert(
+      {0x9D, {5, 0x9D, AddressMode::absolute_x, InstructionType::STA, staOP}});
+
+  m_instructionMap.insert(
+      {0x99, {5, 0x99, AddressMode::absolute_y, InstructionType::STA, staOP}});
+
+  m_instructionMap.insert(
+      {0x81, {6, 0x81, AddressMode::x_indirect, InstructionType::STA, staOP}});
+
+  m_instructionMap.insert(
+      {0x91, {6, 0x91, AddressMode::indirect_y, InstructionType::STA, staOP}});
+
+  auto stxOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x86, {3, 0x86, AddressMode::zeropage, InstructionType::STX, stxOP}});
+
+  m_instructionMap.insert(
+      {0x96, {4, 0x96, AddressMode::zeropage, InstructionType::STX, stxOP}});
+
+  m_instructionMap.insert(
+      {0x8E, {4, 0x8E, AddressMode::absolute, InstructionType::STX, stxOP}});
+
+  auto styOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x84, {3, 0x84, AddressMode::zeropage, InstructionType::STY, styOP}});
+
+  m_instructionMap.insert(
+      {0x94, {4, 0x94, AddressMode::zeropage_x, InstructionType::STY, styOP}});
+
+  m_instructionMap.insert(
+      {0x8C, {4, 0x8C, AddressMode::absolute, InstructionType::STY, styOP}});
+
+  auto taxOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xAA, {2, 0xAA, AddressMode::implied, InstructionType::TAX, taxOP}});
+
+  auto tayOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xA8, {2, 0xA8, AddressMode::implied, InstructionType::TAY, tayOP}});
+
+  auto tsxOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0xBA, {2, 0xBA, AddressMode::implied, InstructionType::TSX, tsxOP}});
+
+  auto txaOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x8A, {2, 0x8A, AddressMode::implied, InstructionType::TXA, txaOP}});
+
+  auto txsOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x9A, {2, 0x9A, AddressMode::implied, InstructionType::TXS, txsOP}});
+
+  auto tyaOP = [this](uint16_t &memoryValue) {
+    if (!this->CarryFlag()) {
+      this->m_PC += static_cast<int16_t>(static_cast<int8_t>(memoryValue));
+    }
+  };
+
+  m_instructionMap.insert(
+      {0x98, {2, 0x98, AddressMode::implied, InstructionType::TYA, tyaOP}});
 }
 
-
-void CPU::Run(){
+void CPU::Run() {
   while (true) {
-    auto op=m_memory[0];
+    auto op = m_memory[0];
   }
 }
