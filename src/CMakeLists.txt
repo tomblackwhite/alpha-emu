@@ -1,13 +1,29 @@
+set(CMAKE_AUTOMOC ON) # Meta-Object Compiler
+set(CMAKE_AUTORCC ON) # Resource Compiler
+set(CMAKE_AUTOUIC ON) # User Interface Compiler
+
+
 find_package(Boost 1.72 REQUIRED log)
 find_package(fmt 8.0.1 REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+
+file(GLOB core_src
+    "./core/*.cc")
 add_library(core
-    "core/clock.cc"
-    "core/cpu.cc"
-    "core/file.cc")
+    ${core_src})
 target_compile_options(core PRIVATE)
 target_include_directories(core PUBLIC "./include")
 target_link_libraries(core PUBLIC Boost::log fmt::fmt spdlog::spdlog)
 
+file(GLOB ui_src
+    "./ui/*.cc"
+    "./ui/*.ui")
+add_library(ui ${ui_src})
+target_include_directories(ui PUBLIC "./include")
+target_link_libraries(ui PUBLIC Qt5::Widgets)
 add_executable(alpha-emu main.cpp)
-target_link_libraries(alpha-emu core)
+
+
+target_include_directories(alpha-emu PUBLIC "./ui")
+target_link_libraries(alpha-emu core ui)
