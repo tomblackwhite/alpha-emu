@@ -7,6 +7,9 @@ find_package(Boost 1.72 REQUIRED log)
 find_package(fmt 8.0.1 REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(glm REQUIRED)
 
 file(GLOB core_src
     "./core/*.cc")
@@ -26,4 +29,4 @@ add_executable(alpha-emu main.cpp)
 
 
 target_include_directories(alpha-emu PUBLIC "./ui")
-target_link_libraries(alpha-emu core ui)
+target_link_libraries(alpha-emu core ui glfw Vulkan::Vulkan glm::glm)
