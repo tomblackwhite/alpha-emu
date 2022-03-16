@@ -29,4 +29,4 @@ add_executable(alpha-emu main.cpp)
 
 
 target_include_directories(alpha-emu PUBLIC "./ui")
-target_link_libraries(alpha-emu core ui glfw Vulkan::Vulkan glm::glm)
+target_link_libraries(alpha-emu core ui glfw Vulkan::Vulkan )

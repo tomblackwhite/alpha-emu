@@ -11,6 +11,7 @@
 #include "log.hh"
 #include <cstddef>
 #include <algorithm>
+#include <bitset>
 namespace filesystem=std::filesystem;
 
 class File{
