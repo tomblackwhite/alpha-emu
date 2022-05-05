@@ -1,11 +1,10 @@
 #pragma once
-
 #include <cstddef>
+
 #include <cstdint>
-#include <vulkan/vk_platform.h>
-#include <vulkan/vulkan_core.h>
+#define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
-#define GLFW_INCLUDE_VULKAN
+
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
@@ -13,10 +12,10 @@
 #include <set>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
 
 struct QueueFamilyIndices {
   std::optional<uint32_t> graphicsFamily;
@@ -55,38 +54,14 @@ void inline DestroyDebugUtilsMessengerEXT(
   }
 }
 
-class HelloTriangleApplication {
+class Window {
 public:
-  void run() {
-    initWindow();
-    initVulkan();
-    mainLoop();
-    cleanup();
-  }
+  void run();
 
 private:
-  void initWindow() {
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
-  }
+  void initWindow();
 
-  void initVulkan() {
-    createInstance();
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
-    createLogicalDevice();
-    createSwapChain();
-    createImageViews();
-    createRenderPass();
-    createGraphicsPipeline();
-    createFramebuffers();
-    createCommandPool();
-    createCommandBuffers();
-    createSyncObjects();
-  }
+  void initVulkan();
 
   void createSyncObjects() {
 
@@ -100,19 +75,18 @@ private:
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for(size_t i=0; i < MAX_FRAMES_IN_FLIGHT;i++){
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-    if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr,
-                          &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-        vkCreateSemaphore(m_device, &semaphoreInfo, nullptr,
-                          &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-        vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) !=
-            VK_SUCCESS) {
+      if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr,
+                            &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+          vkCreateSemaphore(m_device, &semaphoreInfo, nullptr,
+                            &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+          vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) !=
+              VK_SUCCESS) {
 
-      throw std::runtime_error("failed to create semaphores!");
+        throw std::runtime_error("failed to create semaphores!");
+      }
     }
-
-}
   }
 
   void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -156,10 +130,11 @@ private:
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = m_commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
+    allocInfo.commandBufferCount =
+        static_cast<uint32_t>(m_commandBuffers.size());
 
-    if (vkAllocateCommandBuffers(m_device, &allocInfo, m_commandBuffers.data()) !=
-        VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(m_device, &allocInfo,
+                                 m_commandBuffers.data()) != VK_SUCCESS) {
       throw std::runtime_error("failed to allocate command buffers!");
     }
   }
@@ -539,12 +514,7 @@ private:
       return actualExtent;
     }
   }
-  void createSurface() {
-    if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) !=
-        VK_SUCCESS) {
-      throw std::runtime_error("failed to create window surface!");
-    }
-  }
+  void createSurface();
 
   void createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
@@ -593,52 +563,11 @@ private:
                      &m_presentQueue);
   }
 
-  void pickPhysicalDevice() {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
-    if (deviceCount == 0) {
-      throw std::runtime_error("failed to find GPUs with Vulkan support!");
-    }
+  void pickPhysicalDevice();
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+  bool isDeviceSuitable(vk::PhysicalDevice device);
 
-    for (const auto &device : devices) {
-      if (isDeviceSuitable(device)) {
-
-        m_physicalDevice = device;
-        break;
-      }
-    }
-    spdlog::info("选择显卡");
-    if (m_physicalDevice == VK_NULL_HANDLE) {
-      throw std::runtime_error("failed to find a suitable GPU!");
-    }
-  }
-
-  bool isDeviceSuitable(VkPhysicalDevice device) {
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-    spdlog::info("{},{},{}", deviceProperties.deviceName,
-                 deviceProperties.deviceID, deviceProperties.deviceType);
-
-    QueueFamilyIndices indices = findQueueFamilies(device);
-
-    bool extensionsSupported = checkDeviceExtensionSupport(device);
-
-    bool swapChainAdequate = false;
-    if (extensionsSupported) {
-      SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-      swapChainAdequate = !swapChainSupport.formats.empty() &&
-                          !swapChainSupport.presentModes.empty();
-    }
-
-    return indices.isComplete() && extensionsSupported && swapChainAdequate&&
-     deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-  }
-
-  bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+  bool checkDeviceExtensionSupport(const vk::PhysicalDevice& device) {
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
                                          nullptr);
@@ -657,36 +586,7 @@ private:
     return requiredExtensions.empty();
   }
 
-  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
-                                             nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
-                                             queueFamilies.data());
-
-    int i = 0;
-    for (const auto &queueFamily : queueFamilies) {
-      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        indices.graphicsFamily = i;
-      }
-
-      VkBool32 presentSupport = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface,
-                                           &presentSupport);
-
-      spdlog::info("after get queue family{}", i);
-      if (presentSupport) {
-        indices.presentFamily = i;
-      }
-      i++;
-    }
-
-    return indices;
-  }
+  QueueFamilyIndices findQueueFamilies(const vk::PhysicalDevice &device);
 
   SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
     SwapChainSupportDetails details;
@@ -724,12 +624,13 @@ private:
   }
 
   void drawFrame() {
-    vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE,
+                    UINT64_MAX);
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
     uint32_t imageIndex;
     vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX,
-                          m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
-                          &imageIndex);
+                          m_imageAvailableSemaphores[m_currentFrame],
+                          VK_NULL_HANDLE, &imageIndex);
     vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
     recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
@@ -746,12 +647,13 @@ private:
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
 
-    VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
+    VkSemaphore signalSemaphores[] = {
+        m_renderFinishedSemaphores[m_currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) !=
-        VK_SUCCESS) {
+    if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo,
+                      m_inFlightFences[m_currentFrame]) != VK_SUCCESS) {
       throw std::runtime_error("failed to submit draw command buffer!");
     }
 
@@ -767,16 +669,16 @@ private:
     presentInfo.pResults = nullptr;
     vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
-    m_currentFrame=(m_currentFrame+1)%MAX_FRAMES_IN_FLIGHT;
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }
 
   void cleanup() {
 
-    for(size_t i =0; i < MAX_FRAMES_IN_FLIGHT; i++){
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-    vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
-    vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
-    vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+      vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+      vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+      vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
     }
 
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
@@ -818,51 +720,9 @@ private:
 
     return extensions;
   }
-  void createInstance() {
+  void createInstance();
 
-    if (m_enableValidationLayers && !checkValidationLayerSupport()) {
-      throw std::runtime_error(
-          "validation layers requested, but not available!");
-    }
-
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
-
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
-
-    auto extensions = getRequiredExtensions();
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    createInfo.ppEnabledExtensionNames = extensions.data();
-
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-
-    if (m_enableValidationLayers) {
-      createInfo.enabledLayerCount =
-          static_cast<uint32_t>(m_validationLayers.size());
-      createInfo.ppEnabledLayerNames = m_validationLayers.data();
-
-      populateDebugMessengerCreateInfo(debugCreateInfo);
-      createInfo.pNext = reinterpret_cast<VkDebugUtilsMessengerCreateInfoEXT *>(
-          &debugCreateInfo);
-    } else {
-      createInfo.enabledLayerCount = 0;
-      createInfo.pNext = nullptr;
-    }
-
-    if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create instance!");
-    }
-  }
-
-
-  void recreateSwapChain(){
+  void recreateSwapChain() {
     vkDeviceWaitIdle(m_device);
     createSwapChain();
     createImageViews();
@@ -872,32 +732,9 @@ private:
   }
 
   void populateDebugMessengerCreateInfo(
-      VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
-    createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity =
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback;
-    createInfo.pUserData = nullptr;
-  }
-  void setupDebugMessenger() {
-    if (!m_enableValidationLayers)
-      return;
+      vk::DebugUtilsMessengerCreateInfoEXT &createInfo);
 
-    VkDebugUtilsMessengerCreateInfoEXT createInfo;
-
-    populateDebugMessengerCreateInfo(createInfo);
-    if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr,
-                                     &m_debugMessenger) != VK_SUCCESS) {
-      throw std::runtime_error("failed to set up debug messenger!");
-    }
-  }
-
+  void setupDebugMessenger();
   bool checkValidationLayerSupport() {
 
     uint32_t layerCount;
@@ -949,10 +786,11 @@ private:
     return VK_FALSE;
   }
 
-  VkInstance m_instance;
-  VkDebugUtilsMessengerEXT m_debugMessenger;
+  vk::Instance m_instance;
 
-  VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+  vk::DebugUtilsMessengerEXT m_debugMessenger;
+
+  vk::PhysicalDevice m_physicalDevice = nullptr;
   VkDevice m_device;
   VkQueue m_graphicsQueue;
   VkSurfaceKHR m_surface;
@@ -972,7 +810,7 @@ private:
   std::vector<VkSemaphore> m_renderFinishedSemaphores;
   std::vector<VkFence> m_inFlightFences;
 
-  uint32_t m_currentFrame=0;
+  uint32_t m_currentFrame = 0;
   GLFWwindow *m_window;
   const uint32_t m_WIDTH = 800;
   const uint32_t m_HEIGHT = 600;

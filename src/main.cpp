@@ -1,8 +1,8 @@
-#include "file.hh"
-#include "log.hh"
-#include "mainwindow.hh"
-#include <QApplication>
-#include "triangle.hh"
+// #include "file.hh"
+// #include "log.hh"
+// #include "mainwindow.hh"
+// #include <QApplication>
+// #include "triangle.hh"
 // int main(int argc , char *argv[]) {
 //   const auto log = Log::GetInstance();
 //   log.info("hello world");
@@ -22,18 +22,41 @@
 //   return app.exec();
 // }
 
+#include "mainwindow.hh"
+#include "triangle.hh"
+#include <QApplication>
+#include <QVulkanInstance>
+#include <QWindow>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <iostream>
 
+int main(int argc, char *argv[]) {
 
-int main() {
+  QApplication app(argc, argv);
 
-  HelloTriangleApplication app;
-  try {
-    std::cout << "success run\n";
-    app.run();
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
+  QVulkanInstance instance;
+  if(!instance.create()){
+    return 1;
   }
 
-  return EXIT_SUCCESS;
+
+
+
+  QWindow *vulkanWindow = new QWindow();
+
+  vulkanWindow->setVulkanInstance(&instance);
+
+
+  MainWindow w;
+
+  auto widget= w.centralWidget();
+
+  auto layout = widget->layout();
+   layout->addWidget(QWidget::createWindowContainer(vulkanWindow));
+  w.show();
+  auto resultcode = app.exec();
+
+
+  return resultcode;
 }

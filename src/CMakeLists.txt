@@ -17,7 +17,8 @@ add_library(core
     ${core_src})
 target_compile_options(core PRIVATE)
 target_include_directories(core PUBLIC "./include")
-target_link_libraries(core PUBLIC Boost::log fmt::fmt spdlog::spdlog)
+target_link_libraries(core PUBLIC Boost::log fmt::fmt )
+target_link_libraries(core PUBLIC spdlog::spdlog_header_only)
 
 file(GLOB ui_src
     "./ui/*.cc"
@@ -29,4 +30,4 @@ add_executable(alpha-emu main.cpp)
 
 
 target_include_directories(alpha-emu PUBLIC "./ui")
-target_link_libraries(alpha-emu core ui glfw Vulkan::Vulkan )
+target_link_libraries(alpha-emu PUBLIC core ui glfw Vulkan::Vulkan)
