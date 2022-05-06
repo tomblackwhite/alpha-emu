@@ -23,40 +23,45 @@
 // }
 
 #include "mainwindow.hh"
-#include "triangle.hh"
 #include <QApplication>
+#include <QPushButton>
+#include <QVBoxLayout>
 #include <QVulkanInstance>
 #include <QWindow>
-#include <QVBoxLayout>
-#include <QPushButton>
 #include <iostream>
+#include <window.hh>
 
 int main(int argc, char *argv[]) {
 
-  QApplication app(argc, argv);
-
-  QVulkanInstance instance;
-  if(!instance.create()){
-    return 1;
+  Window window;
+  try {
+    window.run();
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
   }
 
+  return EXIT_SUCCESS;
 
+  // QApplication app(argc, argv);
 
+  // QVulkanInstance instance;
+  // if(!instance.create()){
+  //   return 1;
+  // }
 
-  QWindow *vulkanWindow = new QWindow();
+  // QWindow *vulkanWindow = new QWindow();
 
-  vulkanWindow->setVulkanInstance(&instance);
+  // vulkanWindow->setVulkanInstance(&instance);
 
+  // MainWindow w;
 
-  MainWindow w;
+  // auto widget= w.centralWidget();
 
-  auto widget= w.centralWidget();
+  // auto layout = widget->layout();
+  //  layout->addWidget(QWidget::createWindowContainer(vulkanWindow));
+  // w.show();
+  // auto resultcode = app.exec();
 
-  auto layout = widget->layout();
-   layout->addWidget(QWidget::createWindowContainer(vulkanWindow));
-  w.show();
-  auto resultcode = app.exec();
-
-
-  return resultcode;
+  // return resultcode;
 }
