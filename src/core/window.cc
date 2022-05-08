@@ -15,7 +15,7 @@ void Window::initWindow() {
 }
 void Window::initVulkan() {
   createInstance();
-  //setupDebugMessenger();
+  // setupDebugMessenger();
   createSurface();
   pickPhysicalDevice();
   createLogicalDevice();
@@ -62,7 +62,7 @@ void Window::createInstance() {
     createInfo.pNext = nullptr;
   }
 
-  m_instance = vk::createInstance(createInfo);
+  m_instance = raii::Instance(m_context, createInfo);
 }
 
 void Window::populateDebugMessengerCreateInfo(
@@ -76,30 +76,34 @@ void Window::populateDebugMessengerCreateInfo(
   createInfo.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
                             vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
                             vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
-  //createInfo.setPfnUserCallback(debugCallback);
+  // createInfo.setPfnUserCallback(debugCallback);
 }
 
 void Window::setupDebugMessenger() {
 
-  vk::DispatchLoaderDynamic dldy;
-  dldy.init(m_instance);
-  if (!m_enableValidationLayers)
-    return;
+  // vk::DispatchLoaderDynamic dldy;
+  // dldy.init(m_instance);
+  // if (!m_enableValidationLayers)
+  //   return;
 
-  vk::DebugUtilsMessengerCreateInfoEXT createInfo;
+  // vk::DebugUtilsMessengerCreateInfoEXT createInfo;
 
-  populateDebugMessengerCreateInfo(createInfo);
+  // populateDebugMessengerCreateInfo(createInfo);
 
-  m_debugMessenger = m_instance.createDebugUtilsMessengerEXT(createInfo,nullptr,dldy);
+  // m_debugMessenger =
+  // m_instance.createDebugUtilsMessengerEXT(createInfo,nullptr,dldy);
 }
 
 void Window::createSurface() {
 
+  VkSurfaceKHR surface;
 
-  if (glfwCreateWindowSurface((VkInstance)m_instance, m_window, nullptr,
-                              (VkSurfaceKHR*)&m_surface) != VK_SUCCESS) {
+  if (glfwCreateWindowSurface(*m_instance, m_window, nullptr, &surface) !=
+      VK_SUCCESS) {
     throw std::runtime_error("failed to create window surface!");
   }
+
+  m_surface = raii::SurfaceKHR(m_instance, surface);
 }
 
 void Window::pickPhysicalDevice() {
@@ -117,7 +121,8 @@ void Window::pickPhysicalDevice() {
       break;
     }
   }
-  if (m_physicalDevice == vk::PhysicalDevice(nullptr)) {
+
+  if ((*m_physicalDevice) == vk::PhysicalDevice(nullptr)) {
     throw std::runtime_error("failed to find a suitable GPU!");
   }
 }
@@ -179,7 +184,7 @@ void Window::createSwapChain() {
   }
 
   vk::SwapchainCreateInfoKHR createInfo{};
-  createInfo.surface = m_surface;
+  createInfo.surface = *m_surface;
   createInfo.minImageCount = imageCount;
   createInfo.imageFormat = surfaceFormat.format;
   createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -207,7 +212,8 @@ void Window::createSwapChain() {
   createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   m_swapChain = m_device.createSwapchainKHR(createInfo);
-  m_swapChainImages = m_device.getSwapchainImagesKHR(m_swapChain);
+  m_swapChainImages = (*m_device).getSwapchainImagesKHR(m_swapChain);
+
   m_swapChainImageFormat = surfaceFormat.format;
   m_swapChainExtent = extent;
 }
@@ -494,7 +500,7 @@ void Window::drawFrame() {
   m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-bool Window::isDeviceSuitable(const vk::PhysicalDevice &device) {
+bool Window::isDeviceSuitable(const raii::PhysicalDevice &device) {
   auto deviceProperties = device.getProperties();
 
   spdlog::info("{0},{1},{2}", deviceProperties.deviceName,
@@ -589,13 +595,12 @@ void Window::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
                              m_graphicsPipeline);
   commandBuffer.draw(3, 1, 0, 0);
 
-
   commandBuffer.endRenderPass();
 
   commandBuffer.end();
 }
 
-QueueFamilyIndices Window::findQueueFamilies(const vk::PhysicalDevice &device) {
+QueueFamilyIndices Window::findQueueFamilies(const raii::PhysicalDevice &device) {
 
   QueueFamilyIndices indices;
 
@@ -606,7 +611,9 @@ QueueFamilyIndices Window::findQueueFamilies(const vk::PhysicalDevice &device) {
     if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
       indices.graphicsFamily = i;
     }
-    auto presentSupport = device.getSurfaceSupportKHR(i, m_surface);
+
+    auto presentSupport = device.getSurfaceSupportKHR(i, *m_surface);
+
     spdlog::info("after get queue family{}", i);
     if (presentSupport) {
       indices.presentFamily = i;
@@ -617,12 +624,12 @@ QueueFamilyIndices Window::findQueueFamilies(const vk::PhysicalDevice &device) {
 }
 
 SwapChainSupportDetails
-Window::querySwapChainSupport(const vk::PhysicalDevice &device) {
+Window::querySwapChainSupport(const raii::PhysicalDevice &device) {
 
   SwapChainSupportDetails details;
-  details.capabilities = device.getSurfaceCapabilitiesKHR(m_surface);
-  details.formats = device.getSurfaceFormatsKHR(m_surface);
-  details.presentModes = device.getSurfacePresentModesKHR(m_surface);
+  details.capabilities = device.getSurfaceCapabilitiesKHR(*m_surface);
+  details.formats = device.getSurfaceFormatsKHR(*m_surface);
+  details.presentModes = device.getSurfacePresentModesKHR(*m_surface);
   return details;
 }
 
@@ -708,12 +715,8 @@ void Window::cleanup() {
 
   if (m_enableValidationLayers) {
 
-    //m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
+    // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
   }
-
-  vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-
-  vkDestroyInstance(m_instance, nullptr);
 
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();

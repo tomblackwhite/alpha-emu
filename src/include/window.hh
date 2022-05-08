@@ -102,15 +102,15 @@ private:
 
   void pickPhysicalDevice();
 
-  bool isDeviceSuitable(const vk::PhysicalDevice &device);
+  bool isDeviceSuitable(const raii::PhysicalDevice &device);
 
   bool checkDeviceExtensionSupport(const vk::PhysicalDevice &device);
 
   //寻找当前设备支持的队列列表 图形队列列表和presentFamily
-  QueueFamilyIndices findQueueFamilies(const vk::PhysicalDevice &device);
+  QueueFamilyIndices findQueueFamilies(const raii::PhysicalDevice &device);
 
   SwapChainSupportDetails
-  querySwapChainSupport(const vk::PhysicalDevice &device);
+  querySwapChainSupport(const raii::PhysicalDevice &device);
 
   void mainLoop() {
     while (!glfwWindowShouldClose(m_window)) {
@@ -168,16 +168,16 @@ private:
   // }
 
   raii::Context m_context;
-  vk::Instance m_instance;
+  raii::Instance m_instance;
 
   vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-  vk::PhysicalDevice m_physicalDevice;
-  vk::Device m_device;
-  vk::Queue m_graphicsQueue;
-  vk::SurfaceKHR m_surface;
-  vk::Queue m_presentQueue;
-  vk::SwapchainKHR m_swapChain;
+  raii::PhysicalDevice m_physicalDevice;
+  raii::Device m_device;
+  raii::Queue m_graphicsQueue;
+  raii::SurfaceKHR m_surface;
+  raii::Queue m_presentQueue;
+  raii::SwapchainKHR m_swapChain;
   std::vector<vk::Image> m_swapChainImages;
   vk::Format m_swapChainImageFormat;
   vk::Extent2D m_swapChainExtent;
