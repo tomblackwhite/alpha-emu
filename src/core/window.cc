@@ -212,7 +212,7 @@ void Window::createSwapChain() {
   createInfo.oldSwapchain = VK_NULL_HANDLE;
 
   m_swapChain = m_device.createSwapchainKHR(createInfo);
-  m_swapChainImages = (*m_device).getSwapchainImagesKHR(m_swapChain);
+  m_swapChainImages = (*m_device).getSwapchainImagesKHR(*m_swapChain);
 
   m_swapChainImageFormat = surfaceFormat.format;
   m_swapChainExtent = extent;
@@ -286,12 +286,12 @@ void Window::createGraphicsPipeline() {
 
   vk::PipelineShaderStageCreateInfo vertShaderStageInfo{};
   vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-  vertShaderStageInfo.module = vertShaderModule;
+  vertShaderStageInfo.module = *vertShaderModule;
   vertShaderStageInfo.pName = "main";
 
   vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
   fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-  fragShaderStageInfo.module = fragShaderModule;
+  fragShaderStageInfo.module = *fragShaderModule;
   fragShaderStageInfo.pName = "main";
 
   vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
@@ -388,20 +388,17 @@ void Window::createGraphicsPipeline() {
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
   pipelineInfo.basePipelineIndex = -1;
 
-  m_graphicsPipeline = m_device.createGraphicsPipeline({}, pipelineInfo).value;
-
-  m_device.destroyShaderModule(fragShaderModule);
-  m_device.destroyShaderModule(vertShaderModule);
+  m_graphicsPipeline = m_device.createGraphicsPipeline(nullptr, pipelineInfo);
 }
 
 void Window::createFramebuffers() {
   m_swapChainFramebuffers.resize(m_swapChainImageViews.size());
 
   for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
-    vk::ImageView attachments[] = {m_swapChainImageViews[i]};
+    vk::ImageView attachments[] = {*m_swapChainImageViews[i]};
 
     vk::FramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.renderPass = m_renderPass;
+    framebufferInfo.renderPass = *m_renderPass;
     framebufferInfo.attachmentCount = 1;
     framebufferInfo.pAttachments = attachments;
     framebufferInfo.width = m_swapChainExtent.width;
@@ -426,7 +423,7 @@ void Window::createCommandBuffers() {
 
   m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
   vk::CommandBufferAllocateInfo allocInfo{};
-  allocInfo.commandPool = m_commandPool;
+  allocInfo.commandPool = *m_commandPool;
   allocInfo.level = vk::CommandBufferLevel::ePrimary;
   allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
 
@@ -452,24 +449,27 @@ void Window::createSyncObjects() {
 
 void Window::drawFrame() {
 
-  auto result = m_device.waitForFences(m_inFlightFences[m_currentFrame],
+  auto result = m_device.waitForFences(*m_inFlightFences[m_currentFrame],
                                        VK_TRUE, UINT64_MAX);
 
-  m_device.resetFences(m_inFlightFences[m_currentFrame]);
+  m_device.resetFences(*m_inFlightFences[m_currentFrame]);
+
+  vk::AcquireNextImageInfoKHR acquireInfo{};
 
   auto imageIndex =
-      m_device
-          .acquireNextImageKHR(m_swapChain, UINT64_MAX,
-                               m_imageAvailableSemaphores[m_currentFrame])
+      (*m_device)
+          .acquireNextImageKHR(*m_swapChain, UINT64_MAX,
+                               *m_imageAvailableSemaphores[m_currentFrame])
           .value;
 
   m_commandBuffers[m_currentFrame].reset();
 
-  recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
+  recordCommandBuffer(*m_commandBuffers[m_currentFrame], imageIndex);
 
   vk::SubmitInfo submitInfo{};
 
-  vk::Semaphore waitSemaphores[] = {m_imageAvailableSemaphores[m_currentFrame]};
+  vk::Semaphore waitSemaphores[] = {
+      *m_imageAvailableSemaphores[m_currentFrame]};
   vk::PipelineStageFlags waitStages[] = {
       vk::PipelineStageFlagBits::eColorAttachmentOutput};
   submitInfo.waitSemaphoreCount = 1;
@@ -477,10 +477,10 @@ void Window::drawFrame() {
   submitInfo.pWaitDstStageMask = waitStages;
 
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
+  submitInfo.pCommandBuffers = &*m_commandBuffers[m_currentFrame];
 
   vk::Semaphore signalSemaphores[] = {
-      m_renderFinishedSemaphores[m_currentFrame]};
+      *m_renderFinishedSemaphores[m_currentFrame]};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -489,7 +489,7 @@ void Window::drawFrame() {
   vk::PresentInfoKHR presentInfo{};
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;
-  vk::SwapchainKHR swapChains[] = {m_swapChain};
+  vk::SwapchainKHR swapChains[] = {*m_swapChain};
   presentInfo.swapchainCount = 1;
   presentInfo.pSwapchains = swapChains;
   presentInfo.pImageIndices = &imageIndex;
@@ -508,7 +508,7 @@ bool Window::isDeviceSuitable(const raii::PhysicalDevice &device) {
 
   QueueFamilyIndices indices = findQueueFamilies(device);
 
-  bool extensionsSupported = checkDeviceExtensionSupport(device);
+  bool extensionsSupported = checkDeviceExtensionSupport(*device);
 
   bool swapChainAdequate = false;
   if (extensionsSupported) {
@@ -579,8 +579,8 @@ void Window::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
   commandBuffer.begin(beginInfo);
 
   vk::RenderPassBeginInfo renderPassInfo{};
-  renderPassInfo.renderPass = m_renderPass;
-  renderPassInfo.framebuffer = m_swapChainFramebuffers[imageIndex];
+  renderPassInfo.renderPass = *m_renderPass;
+  renderPassInfo.framebuffer = *m_swapChainFramebuffers[imageIndex];
   renderPassInfo.renderArea.offset = vk::Offset2D{0, 0};
   renderPassInfo.renderArea.extent = m_swapChainExtent;
 
@@ -592,7 +592,7 @@ void Window::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
 
   commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-                             m_graphicsPipeline);
+                             *m_graphicsPipeline);
   commandBuffer.draw(3, 1, 0, 0);
 
   commandBuffer.endRenderPass();
@@ -600,7 +600,8 @@ void Window::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
   commandBuffer.end();
 }
 
-QueueFamilyIndices Window::findQueueFamilies(const raii::PhysicalDevice &device) {
+QueueFamilyIndices
+Window::findQueueFamilies(const raii::PhysicalDevice &device) {
 
   QueueFamilyIndices indices;
 
@@ -678,7 +679,7 @@ Window::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
   }
 }
 
-vk::ShaderModule Window::createShaderModule(const std::vector<char> &code) {
+raii::ShaderModule Window::createShaderModule(const std::vector<char> &code) {
   vk::ShaderModuleCreateInfo createInfo{};
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
@@ -688,38 +689,11 @@ vk::ShaderModule Window::createShaderModule(const std::vector<char> &code) {
 
 void Window::cleanup() {
 
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-    m_device.destroySemaphore(m_imageAvailableSemaphores[i]);
-    m_device.destroySemaphore(m_renderFinishedSemaphores[i]);
-    m_device.destroyFence(m_inFlightFences[i]);
-  }
-
-  m_device.destroyCommandPool(m_commandPool);
-
-  for (auto framebuffer : m_swapChainFramebuffers) {
-    m_device.destroyFramebuffer(framebuffer);
-  }
-  m_device.destroyPipeline(m_graphicsPipeline);
-  m_device.destroyPipelineLayout(m_pipelineLayout);
-  m_device.destroyRenderPass(m_renderPass);
-  for (auto imageView : m_swapChainImageViews) {
-    m_device.destroyImageView(imageView);
-  }
-  vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
-  vkDestroyDevice(m_device, nullptr);
-
-  m_device.destroySwapchainKHR(m_swapChain);
-
-  m_device.destroy();
-
   if (m_enableValidationLayers) {
 
     // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
   }
 
-  m_instance.destroySurfaceKHR(m_surface);
-  m_instance.destroy();
   glfwDestroyWindow(m_window);
 
   glfwTerminate();

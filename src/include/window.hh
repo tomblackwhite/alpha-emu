@@ -83,7 +83,7 @@ private:
 
   void createGraphicsPipeline();
 
-  vk::ShaderModule createShaderModule(const std::vector<char> &code);
+  raii::ShaderModule createShaderModule(const std::vector<char> &code);
 
   void createImageViews();
 
@@ -181,16 +181,16 @@ private:
   std::vector<vk::Image> m_swapChainImages;
   vk::Format m_swapChainImageFormat;
   vk::Extent2D m_swapChainExtent;
-  std::vector<VkImageView> m_swapChainImageViews;
-  vk::PipelineLayout m_pipelineLayout;
-  vk::RenderPass m_renderPass;
-  vk::Pipeline m_graphicsPipeline;
-  std::vector<vk::Framebuffer> m_swapChainFramebuffers;
-  vk::CommandPool m_commandPool;
-  std::vector<vk::CommandBuffer> m_commandBuffers;
-  std::vector<vk::Semaphore> m_imageAvailableSemaphores;
-  std::vector<vk::Semaphore> m_renderFinishedSemaphores;
-  std::vector<vk::Fence> m_inFlightFences;
+  std::vector<raii::ImageView> m_swapChainImageViews;
+  raii::PipelineLayout m_pipelineLayout;
+  raii::RenderPass m_renderPass;
+  raii::Pipeline m_graphicsPipeline;
+  std::vector<raii::Framebuffer> m_swapChainFramebuffers;
+  raii::CommandPool m_commandPool;
+  std::vector<raii::CommandBuffer> m_commandBuffers;
+  std::vector<raii::Semaphore> m_imageAvailableSemaphores;
+  std::vector<raii::Semaphore> m_renderFinishedSemaphores;
+  std::vector<raii::Fence> m_inFlightFences;
 
   uint32_t m_currentFrame = 0;
   GLFWwindow *m_window;
