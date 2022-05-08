@@ -220,7 +220,7 @@ void Window::createSwapChain() {
 
 void Window::createImageViews() {
 
-  m_swapChainImageViews.resize(m_swapChainImages.size());
+  m_swapChainImageViews.reserve(m_swapChainImages.size());
   for (std::size_t i = 0; i < m_swapChainImages.size(); i++) {
     vk::ImageViewCreateInfo createInfo{};
     createInfo.image = m_swapChainImages[i];
@@ -235,7 +235,7 @@ void Window::createImageViews() {
     createInfo.subresourceRange.levelCount = 1;
     createInfo.subresourceRange.baseArrayLayer = 0;
     createInfo.subresourceRange.layerCount = 1;
-    m_swapChainImageViews[i] = m_device.createImageView(createInfo);
+    m_swapChainImageViews.emplace_back(m_device.createImageView(createInfo));
   }
 }
 
@@ -380,9 +380,9 @@ void Window::createGraphicsPipeline() {
   pipelineInfo.pDepthStencilState = nullptr; // Optional
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = nullptr; // Optional
-  pipelineInfo.layout = m_pipelineLayout;
+  pipelineInfo.layout = *m_pipelineLayout;
 
-  pipelineInfo.renderPass = m_renderPass;
+  pipelineInfo.renderPass = *m_renderPass;
   pipelineInfo.subpass = 0;
 
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
@@ -392,7 +392,7 @@ void Window::createGraphicsPipeline() {
 }
 
 void Window::createFramebuffers() {
-  m_swapChainFramebuffers.resize(m_swapChainImageViews.size());
+  m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
 
   for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
     vk::ImageView attachments[] = {*m_swapChainImageViews[i]};
@@ -405,7 +405,7 @@ void Window::createFramebuffers() {
     framebufferInfo.height = m_swapChainExtent.height;
     framebufferInfo.layers = 1;
 
-    m_swapChainFramebuffers[i] = m_device.createFramebuffer(framebufferInfo);
+    m_swapChainFramebuffers.emplace_back(m_device.createFramebuffer(framebufferInfo));
   }
 }
 
@@ -421,29 +421,30 @@ void Window::createCommandPool() {
 
 void Window::createCommandBuffers() {
 
-  m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+  m_commandBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
+  auto bufferSize = MAX_FRAMES_IN_FLIGHT;
   vk::CommandBufferAllocateInfo allocInfo{};
   allocInfo.commandPool = *m_commandPool;
   allocInfo.level = vk::CommandBufferLevel::ePrimary;
-  allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
+  allocInfo.commandBufferCount = static_cast<uint32_t>(bufferSize);
 
   m_commandBuffers = m_device.allocateCommandBuffers(allocInfo);
 }
 
 void Window::createSyncObjects() {
 
-  m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-  m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-  m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+  m_imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+  m_renderFinishedSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+  m_inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
 
   vk::SemaphoreCreateInfo semaphoreInfo{};
   vk::FenceCreateInfo fenceInfo{};
   fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    m_imageAvailableSemaphores[i] = m_device.createSemaphore(semaphoreInfo);
-    m_renderFinishedSemaphores[i] = m_device.createSemaphore(semaphoreInfo);
-    m_inFlightFences[i] = m_device.createFence(fenceInfo);
+    m_imageAvailableSemaphores.emplace_back(m_device.createSemaphore(semaphoreInfo));
+    m_renderFinishedSemaphores.emplace_back(m_device.createSemaphore(semaphoreInfo));
+    m_inFlightFences.emplace_back(m_device.createFence(fenceInfo));
   }
 }
 

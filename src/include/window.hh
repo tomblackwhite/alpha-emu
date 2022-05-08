@@ -168,25 +168,25 @@ private:
   // }
 
   raii::Context m_context;
-  raii::Instance m_instance;
+  raii::Instance m_instance {nullptr};
 
   vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-  raii::PhysicalDevice m_physicalDevice;
-  raii::Device m_device;
-  raii::Queue m_graphicsQueue;
-  raii::SurfaceKHR m_surface;
-  raii::Queue m_presentQueue;
-  raii::SwapchainKHR m_swapChain;
+  raii::PhysicalDevice m_physicalDevice{nullptr};
+  raii::Device m_device{nullptr};
+  raii::Queue m_graphicsQueue{nullptr};
+  raii::SurfaceKHR m_surface{nullptr};
+  raii::Queue m_presentQueue{nullptr};
+  raii::SwapchainKHR m_swapChain{nullptr};
   std::vector<vk::Image> m_swapChainImages;
   vk::Format m_swapChainImageFormat;
   vk::Extent2D m_swapChainExtent;
   std::vector<raii::ImageView> m_swapChainImageViews;
-  raii::PipelineLayout m_pipelineLayout;
-  raii::RenderPass m_renderPass;
-  raii::Pipeline m_graphicsPipeline;
+  raii::PipelineLayout m_pipelineLayout{nullptr};
+  raii::RenderPass m_renderPass{nullptr};
+  raii::Pipeline m_graphicsPipeline{nullptr};
   std::vector<raii::Framebuffer> m_swapChainFramebuffers;
-  raii::CommandPool m_commandPool;
+  raii::CommandPool m_commandPool{nullptr};
   std::vector<raii::CommandBuffer> m_commandBuffers;
   std::vector<raii::Semaphore> m_imageAvailableSemaphores;
   std::vector<raii::Semaphore> m_renderFinishedSemaphores;
