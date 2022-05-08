@@ -32,13 +32,23 @@
 #include <window.hh>
 
 int main(int argc, char *argv[]) {
-
-  VulkanWindow window;
+  auto resultcode = 0;
   try {
-    window.run();
+    QApplication app(argc, argv);
+
+    VulkanGameWindow vulkanGameWindow;
+    MainWindow w;
+
+    auto widget = w.centralWidget();
+
+    auto layout = widget->layout();
+    layout->addWidget(
+        QWidget::createWindowContainer(vulkanGameWindow.getQWindow()));
+    w.show();
+    resultcode = app.exec();
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
+    return resultcode;
   }
 
   return EXIT_SUCCESS;

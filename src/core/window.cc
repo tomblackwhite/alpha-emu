@@ -1,11 +1,11 @@
 #include <window.hh>
 
-void VulkanWindow::run() {
-  initWindow();
-  initVulkan();
-  mainLoop();
-  cleanup();
-}
+// void VulkanWindow::run() {
+//   initWindow();
+//   initVulkan();
+//   mainLoop();
+//   cleanup();
+// }
 
 void VulkanWindow::initWindow() {
   glfwInit();
@@ -13,10 +13,10 @@ void VulkanWindow::initWindow() {
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
 }
-void VulkanWindow::initVulkan() {
-  createInstance();
-   setupDebugMessenger();
-  createSurface();
+void VulkanWindow::initVulkanOther(const VkSurfaceKHR &surface
+                              ) {
+  setupDebugMessenger();
+  createSurface(surface);
   pickPhysicalDevice();
   createLogicalDevice();
   createSwapChain();
@@ -43,9 +43,15 @@ void VulkanWindow::createInstance() {
 
   vk::InstanceCreateInfo createInfo{.pApplicationInfo = &appInfo};
 
-  auto extensions = getRequiredExtensions();
+  std::vector<const char*> extensions;
+  extensions.reserve(m_instanceExtensions.size());
+
+  for(auto &deviceExtensions : m_instanceExtensions){
+    extensions.push_back(deviceExtensions.c_str());
+  }
+
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-  createInfo.ppEnabledExtensionNames = extensions.data();
+  createInfo.ppEnabledExtensionNames =extensions.data();
 
   vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 
@@ -83,25 +89,17 @@ void VulkanWindow::setupDebugMessenger() {
 
   // vk::DispatchLoaderDynamic dldy;
   // dldy.init(*m_instance);
-   if (!m_enableValidationLayers)
+  if (!m_enableValidationLayers)
     return;
 
   vk::DebugUtilsMessengerCreateInfoEXT createInfo;
 
   populateDebugMessengerCreateInfo(createInfo);
 
-  m_debugMessenger =
-  m_instance.createDebugUtilsMessengerEXT(createInfo);
+  m_debugMessenger = m_instance.createDebugUtilsMessengerEXT(createInfo);
 }
 
-void VulkanWindow::createSurface() {
-
-  VkSurfaceKHR surface;
-
-  if (glfwCreateWindowSurface(*m_instance, m_window, nullptr, &surface) !=
-      VK_SUCCESS) {
-    throw std::runtime_error("failed to create window surface!");
-  }
+void VulkanWindow::createSurface(const VkSurfaceKHR &surface) {
 
   m_surface = raii::SurfaceKHR(m_instance, surface);
 }
@@ -405,7 +403,8 @@ void VulkanWindow::createFramebuffers() {
     framebufferInfo.height = m_swapChainExtent.height;
     framebufferInfo.layers = 1;
 
-    m_swapChainFramebuffers.emplace_back(m_device.createFramebuffer(framebufferInfo));
+    m_swapChainFramebuffers.emplace_back(
+        m_device.createFramebuffer(framebufferInfo));
   }
 }
 
@@ -442,8 +441,10 @@ void VulkanWindow::createSyncObjects() {
   fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    m_imageAvailableSemaphores.emplace_back(m_device.createSemaphore(semaphoreInfo));
-    m_renderFinishedSemaphores.emplace_back(m_device.createSemaphore(semaphoreInfo));
+    m_imageAvailableSemaphores.emplace_back(
+        m_device.createSemaphore(semaphoreInfo));
+    m_renderFinishedSemaphores.emplace_back(
+        m_device.createSemaphore(semaphoreInfo));
     m_inFlightFences.emplace_back(m_device.createFence(fenceInfo));
   }
 }
@@ -522,7 +523,8 @@ bool VulkanWindow::isDeviceSuitable(const raii::PhysicalDevice &device) {
          deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
 }
 
-bool VulkanWindow::checkDeviceExtensionSupport(const vk::PhysicalDevice &device) {
+bool VulkanWindow::checkDeviceExtensionSupport(
+    const vk::PhysicalDevice &device) {
 
   auto availableExtensions = device.enumerateDeviceExtensionProperties();
   std::set<std::string> requiredExtensions(m_deviceExtensions.begin(),
@@ -571,7 +573,7 @@ std::vector<const char *> VulkanWindow::getRequiredExtensions() {
 }
 
 void VulkanWindow::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
-                                 uint32_t imageIndex) {
+                                       uint32_t imageIndex) {
   vk::CommandBufferBeginInfo beginInfo{};
 
   // beginInfo.flags =0  ;                  // Optional
@@ -680,7 +682,8 @@ VulkanWindow::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
   }
 }
 
-raii::ShaderModule VulkanWindow::createShaderModule(const std::vector<char> &code) {
+raii::ShaderModule
+VulkanWindow::createShaderModule(const std::vector<char> &code) {
   vk::ShaderModuleCreateInfo createInfo{};
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());

@@ -3,19 +3,22 @@
 
 #include <cstdint>
 #define VULKAN_HPP_NO_CONSTRUCTORS
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <set>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_raii.hpp>
 
+#include <QVulkanInstance>
+#include <QWindow>
 namespace raii = vk::raii;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -34,40 +37,24 @@ struct SwapChainSupportDetails {
   std::vector<vk::PresentModeKHR> presentModes;
 };
 
-// VkResult inline CreateDebugUtilsMessengerEXT(
-//     vk::Instance instance,
-//     const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-//     const VkAllocationCallbacks *pAllocator,
-//     VkDebugUtilsMessengerEXT *pDebugMessenger) {
-
-//   auto func = (PFN_vkCreateDebugUtilsMessengerEXT)instance.getProcAddr(
-//       "vkCreateDebugUtilsMessengerEXT");
-//   if (func != nullptr) {
-//     return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-//   } else {
-//     return VK_ERROR_EXTENSION_NOT_PRESENT;
-//   }
-// }
-
-// void inline DestroyDebugUtilsMessengerEXT(
-//     vk::Instance instance, VkDebugUtilsMessengerEXT debugMessenger,
-//     const VkAllocationCallbacks *pAllocator) {
-//   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)instance.getProcAddr(
-//       "vkDestroyDebugUtilsMessengerEXT");
-//   if (func != nullptr) {
-//     func(instance, debugMessenger, pAllocator);
-//   }
-// }
-
 class VulkanWindow {
 public:
+  VulkanWindow() = default;
+
+  void initInstance(std::vector<std::string> &&extensions) {
+
+    m_instanceExtensions = extensions;
+    createInstance();
+  }
+
+  void initVulkanOther(const VkSurfaceKHR &surface);
+  VkInstance getVulkanInstance() { return *m_instance; }
   void run();
 
 private:
   void initWindow();
 
-  void initVulkan();
-
+  void createInstance();
   void createSyncObjects();
 
   void recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
@@ -89,13 +76,14 @@ private:
 
   void createSwapChain();
 
-  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats);
+  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
+      const std::vector<vk::SurfaceFormatKHR> &availableFormats);
 
   vk::PresentModeKHR chooseSwapPresentMode(
       const std::vector<vk::PresentModeKHR> &availablePresentModes);
 
   vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities);
-  void createSurface();
+  void createSurface(const VkSurfaceKHR &surface);
 
   void createLogicalDevice();
 
@@ -124,7 +112,6 @@ private:
   void cleanup();
 
   std::vector<const char *> getRequiredExtensions();
-  void createInstance();
 
   void recreateSwapChain() {
     m_device.waitIdle();
@@ -167,8 +154,7 @@ private:
   }
 
   raii::Context m_context;
-  raii::Instance m_instance {nullptr};
-
+  raii::Instance m_instance{nullptr};
 
   raii::DebugUtilsMessengerEXT m_debugMessenger{nullptr};
 
@@ -199,11 +185,55 @@ private:
   const std::vector<const char *> m_validationLayers = {
       "VK_LAYER_KHRONOS_validation"};
 
-  const std::vector<const char *> m_deviceExtensions = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+  std::vector<std::string> m_instanceExtensions;
+
+  const std::vector<const char *> m_deviceExtensions{"VK_KHR_swapchain"};
 #ifdef NDEBUG
-  const bool m_enableValidationLayers = false;
+  const bool m_enableValidationLayers = true;
 #else
   const bool m_enableValidationLayers = false;
 #endif
+};
+
+/*游戏窗口主要显示的window*/
+class VulkanGameWindow {
+public:
+  VulkanGameWindow()
+      : m_qWindow(new QWindow()), m_qVulkanInstance(new QVulkanInstance()),
+        m_vulkanWindow() {
+
+    //初始化vulkan instance
+    auto extensions = m_qVulkanInstance->supportedExtensions();
+    std::vector<std::string> stdExtensions;
+    stdExtensions.reserve(extensions.size());
+    std::transform(
+        extensions.constBegin(), extensions.constEnd(),
+        std::back_insert_iterator<std::vector<std::string>>(stdExtensions),
+        [](QVulkanExtension const &extension) {
+          return extension.name.toStdString();
+        });
+    m_vulkanWindow.initInstance(std::move(stdExtensions));
+
+    auto vulkanInstance=m_vulkanWindow.getVulkanInstance();
+
+    //设置VulkanInstance 以便创建QWindow
+    m_qVulkanInstance->setVkInstance(vulkanInstance);
+    if (!m_qVulkanInstance->create()) {
+      throw "创建qVulkanInstance 失败";
+    }
+    m_qWindow->setSurfaceType(QSurface::VulkanSurface);
+    m_qWindow->setVulkanInstance(m_qVulkanInstance);
+    m_qWindow->create();
+
+    //获取surface 以便初始化其他部分
+    auto surface = QVulkanInstance::surfaceForWindow(m_qWindow);
+    m_vulkanWindow.initVulkanOther(surface);
+  };
+
+  QWindow *getQWindow() { return m_qWindow; }
+
+private:
+  QVulkanInstance *m_qVulkanInstance;
+  QWindow *m_qWindow;
+  VulkanWindow m_vulkanWindow;
 };
