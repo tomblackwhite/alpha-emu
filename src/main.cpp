@@ -33,7 +33,7 @@
 
 int main(int argc, char *argv[]) {
 
-  Window window;
+  VulkanWindow window;
   try {
     window.run();
   } catch (const std::exception &e) {

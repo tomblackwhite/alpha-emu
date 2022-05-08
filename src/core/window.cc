@@ -1,21 +1,21 @@
 #include <window.hh>
 
-void Window::run() {
+void VulkanWindow::run() {
   initWindow();
   initVulkan();
   mainLoop();
   cleanup();
 }
 
-void Window::initWindow() {
+void VulkanWindow::initWindow() {
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
 }
-void Window::initVulkan() {
+void VulkanWindow::initVulkan() {
   createInstance();
-  // setupDebugMessenger();
+   setupDebugMessenger();
   createSurface();
   pickPhysicalDevice();
   createLogicalDevice();
@@ -29,7 +29,7 @@ void Window::initVulkan() {
   createSyncObjects();
 }
 
-void Window::createInstance() {
+void VulkanWindow::createInstance() {
 
   if (m_enableValidationLayers && !checkValidationLayerSupport()) {
     throw std::runtime_error("validation layers requested, but not available!");
@@ -65,7 +65,7 @@ void Window::createInstance() {
   m_instance = raii::Instance(m_context, createInfo);
 }
 
-void Window::populateDebugMessengerCreateInfo(
+void VulkanWindow::populateDebugMessengerCreateInfo(
     vk::DebugUtilsMessengerCreateInfoEXT &createInfo) {
 
   createInfo.setMessageSeverity(
@@ -76,25 +76,25 @@ void Window::populateDebugMessengerCreateInfo(
   createInfo.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
                             vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
                             vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
-  // createInfo.setPfnUserCallback(debugCallback);
+  createInfo.setPfnUserCallback(debugCallback);
 }
 
-void Window::setupDebugMessenger() {
+void VulkanWindow::setupDebugMessenger() {
 
   // vk::DispatchLoaderDynamic dldy;
-  // dldy.init(m_instance);
-  // if (!m_enableValidationLayers)
-  //   return;
+  // dldy.init(*m_instance);
+   if (!m_enableValidationLayers)
+    return;
 
-  // vk::DebugUtilsMessengerCreateInfoEXT createInfo;
+  vk::DebugUtilsMessengerCreateInfoEXT createInfo;
 
-  // populateDebugMessengerCreateInfo(createInfo);
+  populateDebugMessengerCreateInfo(createInfo);
 
-  // m_debugMessenger =
-  // m_instance.createDebugUtilsMessengerEXT(createInfo,nullptr,dldy);
+  m_debugMessenger =
+  m_instance.createDebugUtilsMessengerEXT(createInfo);
 }
 
-void Window::createSurface() {
+void VulkanWindow::createSurface() {
 
   VkSurfaceKHR surface;
 
@@ -106,7 +106,7 @@ void Window::createSurface() {
   m_surface = raii::SurfaceKHR(m_instance, surface);
 }
 
-void Window::pickPhysicalDevice() {
+void VulkanWindow::pickPhysicalDevice() {
   auto devices = m_instance.enumeratePhysicalDevices();
   // m_instance.enumeratePhysicalDevices();
 
@@ -127,7 +127,7 @@ void Window::pickPhysicalDevice() {
   }
 }
 
-void Window::createLogicalDevice() {
+void VulkanWindow::createLogicalDevice() {
   QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
 
   std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -168,7 +168,7 @@ void Window::createLogicalDevice() {
   m_presentQueue = m_device.getQueue(indices.presentFamily.value(), 0);
 }
 
-void Window::createSwapChain() {
+void VulkanWindow::createSwapChain() {
 
   SwapChainSupportDetails swapChainSupport =
       querySwapChainSupport(m_physicalDevice);
@@ -218,7 +218,7 @@ void Window::createSwapChain() {
   m_swapChainExtent = extent;
 }
 
-void Window::createImageViews() {
+void VulkanWindow::createImageViews() {
 
   m_swapChainImageViews.reserve(m_swapChainImages.size());
   for (std::size_t i = 0; i < m_swapChainImages.size(); i++) {
@@ -239,7 +239,7 @@ void Window::createImageViews() {
   }
 }
 
-void Window::createRenderPass() {
+void VulkanWindow::createRenderPass() {
   vk::AttachmentDescription colorAttachment{};
   colorAttachment.format = m_swapChainImageFormat;
   colorAttachment.samples = vk::SampleCountFlagBits::e1;
@@ -276,7 +276,7 @@ void Window::createRenderPass() {
   m_renderPass = m_device.createRenderPass(renderPassInfo);
 }
 
-void Window::createGraphicsPipeline() {
+void VulkanWindow::createGraphicsPipeline() {
   std::string homePath = std::getenv("HOME");
 
   auto vertShaderCode = readFile(homePath + "/test/vert.spv");
@@ -391,7 +391,7 @@ void Window::createGraphicsPipeline() {
   m_graphicsPipeline = m_device.createGraphicsPipeline(nullptr, pipelineInfo);
 }
 
-void Window::createFramebuffers() {
+void VulkanWindow::createFramebuffers() {
   m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
 
   for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
@@ -409,7 +409,7 @@ void Window::createFramebuffers() {
   }
 }
 
-void Window::createCommandPool() {
+void VulkanWindow::createCommandPool() {
   QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_physicalDevice);
 
   vk::CommandPoolCreateInfo poolInfo{};
@@ -419,7 +419,7 @@ void Window::createCommandPool() {
   m_commandPool = m_device.createCommandPool(poolInfo);
 }
 
-void Window::createCommandBuffers() {
+void VulkanWindow::createCommandBuffers() {
 
   m_commandBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
   auto bufferSize = MAX_FRAMES_IN_FLIGHT;
@@ -431,7 +431,7 @@ void Window::createCommandBuffers() {
   m_commandBuffers = m_device.allocateCommandBuffers(allocInfo);
 }
 
-void Window::createSyncObjects() {
+void VulkanWindow::createSyncObjects() {
 
   m_imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
   m_renderFinishedSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
@@ -448,7 +448,7 @@ void Window::createSyncObjects() {
   }
 }
 
-void Window::drawFrame() {
+void VulkanWindow::drawFrame() {
 
   auto result = m_device.waitForFences(*m_inFlightFences[m_currentFrame],
                                        VK_TRUE, UINT64_MAX);
@@ -501,7 +501,7 @@ void Window::drawFrame() {
   m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-bool Window::isDeviceSuitable(const raii::PhysicalDevice &device) {
+bool VulkanWindow::isDeviceSuitable(const raii::PhysicalDevice &device) {
   auto deviceProperties = device.getProperties();
 
   spdlog::info("{0},{1},{2}", deviceProperties.deviceName,
@@ -522,7 +522,7 @@ bool Window::isDeviceSuitable(const raii::PhysicalDevice &device) {
          deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
 }
 
-bool Window::checkDeviceExtensionSupport(const vk::PhysicalDevice &device) {
+bool VulkanWindow::checkDeviceExtensionSupport(const vk::PhysicalDevice &device) {
 
   auto availableExtensions = device.enumerateDeviceExtensionProperties();
   std::set<std::string> requiredExtensions(m_deviceExtensions.begin(),
@@ -535,7 +535,7 @@ bool Window::checkDeviceExtensionSupport(const vk::PhysicalDevice &device) {
   return requiredExtensions.empty();
 }
 
-bool Window::checkValidationLayerSupport() {
+bool VulkanWindow::checkValidationLayerSupport() {
 
   auto availableLayers = vk::enumerateInstanceLayerProperties();
   for (const char *layerName : m_validationLayers) {
@@ -555,7 +555,7 @@ bool Window::checkValidationLayerSupport() {
   return true;
 }
 
-std::vector<const char *> Window::getRequiredExtensions() {
+std::vector<const char *> VulkanWindow::getRequiredExtensions() {
   uint32_t glfwExtensionCount = 0;
   const char **glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -570,7 +570,7 @@ std::vector<const char *> Window::getRequiredExtensions() {
   return extensions;
 }
 
-void Window::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
+void VulkanWindow::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
                                  uint32_t imageIndex) {
   vk::CommandBufferBeginInfo beginInfo{};
 
@@ -602,7 +602,7 @@ void Window::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
 }
 
 QueueFamilyIndices
-Window::findQueueFamilies(const raii::PhysicalDevice &device) {
+VulkanWindow::findQueueFamilies(const raii::PhysicalDevice &device) {
 
   QueueFamilyIndices indices;
 
@@ -626,7 +626,7 @@ Window::findQueueFamilies(const raii::PhysicalDevice &device) {
 }
 
 SwapChainSupportDetails
-Window::querySwapChainSupport(const raii::PhysicalDevice &device) {
+VulkanWindow::querySwapChainSupport(const raii::PhysicalDevice &device) {
 
   SwapChainSupportDetails details;
   details.capabilities = device.getSurfaceCapabilitiesKHR(*m_surface);
@@ -635,7 +635,7 @@ Window::querySwapChainSupport(const raii::PhysicalDevice &device) {
   return details;
 }
 
-vk::SurfaceFormatKHR Window::chooseSwapSurfaceFormat(
+vk::SurfaceFormatKHR VulkanWindow::chooseSwapSurfaceFormat(
     const std::vector<vk::SurfaceFormatKHR> &availableFormats) {
   for (const auto &availableFormat : availableFormats) {
     if (availableFormat.format == vk::Format::eB8G8R8A8Srgb &&
@@ -647,7 +647,7 @@ vk::SurfaceFormatKHR Window::chooseSwapSurfaceFormat(
   return availableFormats[0];
 }
 
-vk::PresentModeKHR Window::chooseSwapPresentMode(
+vk::PresentModeKHR VulkanWindow::chooseSwapPresentMode(
     const std::vector<vk::PresentModeKHR> &availablePresentModes) {
   for (const auto &availablePresentMode : availablePresentModes) {
     if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
@@ -658,7 +658,7 @@ vk::PresentModeKHR Window::chooseSwapPresentMode(
 }
 
 vk::Extent2D
-Window::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
+VulkanWindow::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
   if (capabilities.currentExtent.width !=
       std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
@@ -680,7 +680,7 @@ Window::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
   }
 }
 
-raii::ShaderModule Window::createShaderModule(const std::vector<char> &code) {
+raii::ShaderModule VulkanWindow::createShaderModule(const std::vector<char> &code) {
   vk::ShaderModuleCreateInfo createInfo{};
   createInfo.codeSize = code.size();
   createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
@@ -688,7 +688,7 @@ raii::ShaderModule Window::createShaderModule(const std::vector<char> &code) {
   return shaderModule;
 }
 
-void Window::cleanup() {
+void VulkanWindow::cleanup() {
 
   if (m_enableValidationLayers) {
 

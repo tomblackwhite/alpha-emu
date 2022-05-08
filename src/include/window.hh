@@ -59,7 +59,7 @@ struct SwapChainSupportDetails {
 //   }
 // }
 
-class Window {
+class VulkanWindow {
 public:
   void run();
 
@@ -89,8 +89,7 @@ private:
 
   void createSwapChain();
 
-  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
-      const std::vector<vk::SurfaceFormatKHR> &availableFormats);
+  vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats);
 
   vk::PresentModeKHR chooseSwapPresentMode(
       const std::vector<vk::PresentModeKHR> &availablePresentModes);
@@ -158,19 +157,20 @@ private:
     return buffer;
   }
 
-  // static VKAPI_ATTR VkBool32 VKAPI_CALL
-  // debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-  //               VkDebugUtilsMessageTypeFlagsEXT messageType,
-  //               const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-  //               void *pUserData) {
-  //   std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-  //   return VK_FALSE;
-  // }
+  static VKAPI_ATTR VkBool32 VKAPI_CALL
+  debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                VkDebugUtilsMessageTypeFlagsEXT messageType,
+                const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                void *pUserData) {
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    return VK_FALSE;
+  }
 
   raii::Context m_context;
   raii::Instance m_instance {nullptr};
 
-  vk::DebugUtilsMessengerEXT m_debugMessenger;
+
+  raii::DebugUtilsMessengerEXT m_debugMessenger{nullptr};
 
   raii::PhysicalDevice m_physicalDevice{nullptr};
   raii::Device m_device{nullptr};
