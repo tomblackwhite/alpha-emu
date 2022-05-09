@@ -33,4 +33,4 @@ add_executable(alpha-emu main.cpp)
 
 
 target_include_directories(alpha-emu PUBLIC "./ui")
-target_link_libraries(alpha-emu PUBLIC core ui glfw Vulkan::Vulkan spdlog::spdlog)
+target_link_libraries(alpha-emu PUBLIC core ui glfw Vulkan::Vulkan )

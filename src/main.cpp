@@ -36,14 +36,13 @@ int main(int argc, char *argv[]) {
   try {
     QApplication app(argc, argv);
 
-    VulkanGameWindow vulkanGameWindow;
+    VulkanGameWindow *vulkanGameWindow=new VulkanGameWindow();
     MainWindow w;
 
     auto widget = w.centralWidget();
 
     auto layout = widget->layout();
-    layout->addWidget(
-        QWidget::createWindowContainer(vulkanGameWindow.getQWindow()));
+    layout->addWidget(QWidget::createWindowContainer(vulkanGameWindow));
     w.show();
     resultcode = app.exec();
   } catch (const std::exception &e) {

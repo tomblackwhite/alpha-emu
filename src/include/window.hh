@@ -47,9 +47,13 @@ public:
     createInstance();
   }
 
+  //
+  void initWindow(QWindow *window) { m_window = window; }
+
   void initVulkanOther(const VkSurfaceKHR &surface);
   VkInstance getVulkanInstance() { return *m_instance; }
-  void run();
+  void waitDrawClean() { m_device.waitIdle(); };
+  void drawFrame();
 
 private:
   void initWindow();
@@ -100,14 +104,9 @@ private:
   querySwapChainSupport(const raii::PhysicalDevice &device);
 
   void mainLoop() {
-    while (!glfwWindowShouldClose(m_window)) {
-      glfwPollEvents();
-      drawFrame();
-    }
+    drawFrame();
     m_device.waitIdle();
   }
-
-  void drawFrame();
 
   void cleanup();
 
@@ -179,7 +178,7 @@ private:
   std::vector<raii::Fence> m_inFlightFences;
 
   uint32_t m_currentFrame = 0;
-  GLFWwindow *m_window;
+  QWindow *m_window{nullptr};
   const uint32_t m_WIDTH = 800;
   const uint32_t m_HEIGHT = 600;
   const std::vector<const char *> m_validationLayers = {
@@ -196,13 +195,37 @@ private:
 };
 
 /*游戏窗口主要显示的window*/
-class VulkanGameWindow {
+class VulkanGameWindow : public QWindow {
 public:
   VulkanGameWindow()
-      : m_qWindow(new QWindow()), m_qVulkanInstance(new QVulkanInstance()),
-        m_vulkanWindow() {
+      :QWindow(), m_qVulkanInstance(new QVulkanInstance()), m_vulkanWindow() {
+    QWindow::setSurfaceType(QSurface::VulkanSurface);
+  }
 
-    //初始化vulkan instance
+  void exposeEvent(QExposeEvent *) override {
+    if (isExposed()) {
+      if (!m_initialized) {
+        m_initialized = true;
+        init();
+        m_vulkanWindow.drawFrame();
+      }
+    }
+  }
+
+  bool event(QEvent *e) override {
+    if (e->type() == QEvent::UpdateRequest) {
+
+      m_vulkanWindow.drawFrame();
+    } else if (e->type() == QEvent::Close) {
+      m_vulkanWindow.waitDrawClean();
+    }
+    return QWindow::event(e);
+  }
+  virtual ~VulkanGameWindow(){}
+
+private:
+  //初始化vulkan 设置相关数据
+  void init() {
     auto extensions = m_qVulkanInstance->supportedExtensions();
     std::vector<std::string> stdExtensions;
     stdExtensions.reserve(extensions.size());
@@ -214,26 +237,24 @@ public:
         });
     m_vulkanWindow.initInstance(std::move(stdExtensions));
 
-    auto vulkanInstance=m_vulkanWindow.getVulkanInstance();
+    auto vulkanInstance = m_vulkanWindow.getVulkanInstance();
 
     //设置VulkanInstance 以便创建QWindow
     m_qVulkanInstance->setVkInstance(vulkanInstance);
     if (!m_qVulkanInstance->create()) {
       throw "创建qVulkanInstance 失败";
     }
-    m_qWindow->setSurfaceType(QSurface::VulkanSurface);
-    m_qWindow->setVulkanInstance(m_qVulkanInstance);
-    m_qWindow->create();
+    QWindow::setVulkanInstance(m_qVulkanInstance);
+    QWindow::create();
 
     //获取surface 以便初始化其他部分
-    auto surface = QVulkanInstance::surfaceForWindow(m_qWindow);
+    auto surface = QVulkanInstance::surfaceForWindow(this);
     m_vulkanWindow.initVulkanOther(surface);
-  };
-
-  QWindow *getQWindow() { return m_qWindow; }
+  }
 
 private:
   QVulkanInstance *m_qVulkanInstance;
-  QWindow *m_qWindow;
   VulkanWindow m_vulkanWindow;
+
+  bool m_initialized = false;
 };

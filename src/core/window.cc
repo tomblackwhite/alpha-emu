@@ -7,12 +7,12 @@
 //   cleanup();
 // }
 
-void VulkanWindow::initWindow() {
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
-}
+// void VulkanWindow::initWindow() {
+//   glfwInit();
+//   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+//   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+//   m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
+// }
 void VulkanWindow::initVulkanOther(const VkSurfaceKHR &surface
                               ) {
   setupDebugMessenger();
@@ -666,8 +666,9 @@ VulkanWindow::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
     return capabilities.currentExtent;
   } else {
     int width, height;
-    glfwGetFramebufferSize(m_window, &width, &height);
 
+    height=m_window->height();
+    width=m_window->width();
     vk::Extent2D actualExtent = {static_cast<uint32_t>(width),
                                  static_cast<uint32_t>(height)};
 
@@ -698,7 +699,7 @@ void VulkanWindow::cleanup() {
     // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
   }
 
-  glfwDestroyWindow(m_window);
+  //glfwDestroyWindow(m_window);
 
-  glfwTerminate();
+  //glfwTerminate();
 }
