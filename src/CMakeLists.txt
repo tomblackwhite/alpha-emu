@@ -11,21 +11,30 @@ find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glm REQUIRED)
 
-file(GLOB core_src
-    "./core/*.cc")
-add_library(core
-    ${core_src})
+file(
+  GLOB core_src
+  "./core/*.cc"
+)
+add_library(
+  core
+  ${core_src}
+)
 target_compile_options(core PRIVATE)
 target_include_directories(core PUBLIC "./include")
-target_link_libraries(core PUBLIC Boost::log
-    fmt::fmt
-    Qt5::Widgets
-    spdlog::spdlog
-    Vulkan::Vulkan)
+target_link_libraries(
+  core PUBLIC Boost::log
+  fmt::fmt
+  glfw
+  Qt5::Widgets
+  spdlog::spdlog
+  Vulkan::Vulkan
+)
 
-file(GLOB ui_src
-    "./ui/*.cc"
-    "./ui/*.ui")
+file(
+  GLOB ui_src
+  "./ui/*.cc"
+  "./ui/*.ui"
+)
 add_library(ui ${ui_src})
 target_include_directories(ui PUBLIC "./include")
 target_link_libraries(ui PUBLIC Qt5::Widgets)
@@ -33,4 +42,4 @@ add_executable(alpha-emu main.cpp)
 
 
 target_include_directories(alpha-emu PUBLIC "./ui")
-target_link_libraries(alpha-emu PUBLIC core ui glfw Vulkan::Vulkan )
+target_link_libraries(alpha-emu PUBLIC core ui glfw Vulkan::Vulkan)

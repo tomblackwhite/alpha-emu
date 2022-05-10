@@ -13,8 +13,7 @@
 //   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 //   m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
 // }
-void VulkanWindow::initVulkanOther(const VkSurfaceKHR &surface
-                              ) {
+void VulkanWindow::initVulkanOther(const VkSurfaceKHR &surface) {
   setupDebugMessenger();
   createSurface(surface);
   pickPhysicalDevice();
@@ -36,22 +35,22 @@ void VulkanWindow::createInstance() {
   }
 
   vk::ApplicationInfo appInfo{.pApplicationName = "Hello Triangle",
-                              .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+                              .applicationVersion = VK_MAKE_VERSION(1, 1, 0),
                               .pEngineName = "No Engine",
-                              .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-                              .apiVersion = VK_API_VERSION_1_0};
+                              .engineVersion = VK_MAKE_VERSION(1, 1, 0),
+                              .apiVersion = VK_API_VERSION_1_1};
 
   vk::InstanceCreateInfo createInfo{.pApplicationInfo = &appInfo};
 
-  std::vector<const char*> extensions;
+  std::vector<const char *> extensions;
   extensions.reserve(m_instanceExtensions.size());
 
-  for(auto &deviceExtensions : m_instanceExtensions){
+  for (auto &deviceExtensions : m_instanceExtensions) {
     extensions.push_back(deviceExtensions.c_str());
   }
 
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-  createInfo.ppEnabledExtensionNames =extensions.data();
+  createInfo.ppEnabledExtensionNames = extensions.data();
 
   vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 
@@ -207,7 +206,7 @@ void VulkanWindow::createSwapChain() {
   createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
   createInfo.presentMode = presentMode;
   createInfo.clipped = VK_TRUE;
-  createInfo.oldSwapchain = VK_NULL_HANDLE;
+  createInfo.oldSwapchain = *m_swapChain;
 
   m_swapChain = m_device.createSwapchainKHR(createInfo);
   m_swapChainImages = (*m_device).getSwapchainImagesKHR(*m_swapChain);
@@ -218,6 +217,7 @@ void VulkanWindow::createSwapChain() {
 
 void VulkanWindow::createImageViews() {
 
+  m_swapChainImageViews.clear();
   m_swapChainImageViews.reserve(m_swapChainImages.size());
   for (std::size_t i = 0; i < m_swapChainImages.size(); i++) {
     vk::ImageViewCreateInfo createInfo{};
@@ -390,6 +390,7 @@ void VulkanWindow::createGraphicsPipeline() {
 }
 
 void VulkanWindow::createFramebuffers() {
+  m_swapChainFramebuffers.clear();
   m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
 
   for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
@@ -419,6 +420,8 @@ void VulkanWindow::createCommandPool() {
 }
 
 void VulkanWindow::createCommandBuffers() {
+
+  m_commandBuffers.clear();
 
   m_commandBuffers.reserve(MAX_FRAMES_IN_FLIGHT);
   auto bufferSize = MAX_FRAMES_IN_FLIGHT;
@@ -451,22 +454,33 @@ void VulkanWindow::createSyncObjects() {
 
 void VulkanWindow::drawFrame() {
 
+  auto seconds = static_cast<uint64_t>(10e9);
+
+  vk::FenceGetFdInfoKHR getInfo{};
+
   auto result = m_device.waitForFences(*m_inFlightFences[m_currentFrame],
-                                       VK_TRUE, UINT64_MAX);
+                                       VK_TRUE, seconds);
+
+  if (result == vk::Result::eTimeout) {
+    spdlog::warn(" wait fences time out");
+  }
 
   m_device.resetFences(*m_inFlightFences[m_currentFrame]);
 
   vk::AcquireNextImageInfoKHR acquireInfo{};
 
-  auto imageIndex =
-      (*m_device)
-          .acquireNextImageKHR(*m_swapChain, UINT64_MAX,
-                               *m_imageAvailableSemaphores[m_currentFrame])
-          .value;
+  // acquireInfo.swapchain = *m_swapChain;
+  // acquireInfo.timeout = seconds;
+  // acquireInfo.semaphore = *m_imageAvailableSemaphores[m_currentFrame];
+  // acquireInfo.deviceMask = UINT32_MAX;
+
+  auto [acquireResult, imageIndex] = (*m_device).acquireNextImageKHR(
+      *m_swapChain, seconds, *m_imageAvailableSemaphores[m_currentFrame]);
+
 
   m_commandBuffers[m_currentFrame].reset();
 
-  recordCommandBuffer(*m_commandBuffers[m_currentFrame], imageIndex);
+  recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
   vk::SubmitInfo submitInfo{};
 
@@ -474,19 +488,20 @@ void VulkanWindow::drawFrame() {
       *m_imageAvailableSemaphores[m_currentFrame]};
   vk::PipelineStageFlags waitStages[] = {
       vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  vk::CommandBuffer commandBuffers[]={*m_commandBuffers[m_currentFrame]};
   submitInfo.waitSemaphoreCount = 1;
   submitInfo.pWaitSemaphores = waitSemaphores;
   submitInfo.pWaitDstStageMask = waitStages;
 
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &*m_commandBuffers[m_currentFrame];
+  submitInfo.pCommandBuffers = commandBuffers;
 
   vk::Semaphore signalSemaphores[] = {
       *m_renderFinishedSemaphores[m_currentFrame]};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
-  m_graphicsQueue.submit(submitInfo);
+  m_graphicsQueue.submit(submitInfo,*m_inFlightFences[m_currentFrame]);
 
   vk::PresentInfoKHR presentInfo{};
   presentInfo.waitSemaphoreCount = 1;
@@ -497,7 +512,11 @@ void VulkanWindow::drawFrame() {
   presentInfo.pImageIndices = &imageIndex;
 
   presentInfo.pResults = nullptr;
-  m_presentQueue.presentKHR(presentInfo);
+  auto presentQueueResult = m_presentQueue.presentKHR(presentInfo);
+  if (presentQueueResult != vk::Result::eSuboptimalKHR &&
+      presentQueueResult != vk::Result::eSuccess) {
+    spdlog::warn("present Error");
+  }
 
   m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -572,7 +591,7 @@ std::vector<const char *> VulkanWindow::getRequiredExtensions() {
   return extensions;
 }
 
-void VulkanWindow::recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
+void VulkanWindow::recordCommandBuffer(const raii::CommandBuffer &commandBuffer,
                                        uint32_t imageIndex) {
   vk::CommandBufferBeginInfo beginInfo{};
 
@@ -667,8 +686,8 @@ VulkanWindow::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities) {
   } else {
     int width, height;
 
-    height=m_window->height();
-    width=m_window->width();
+    height = m_window->height();
+    width = m_window->width();
     vk::Extent2D actualExtent = {static_cast<uint32_t>(width),
                                  static_cast<uint32_t>(height)};
 
@@ -699,7 +718,7 @@ void VulkanWindow::cleanup() {
     // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
   }
 
-  //glfwDestroyWindow(m_window);
+  // glfwDestroyWindow(m_window);
 
-  //glfwTerminate();
+  // glfwTerminate();
 }

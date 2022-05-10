@@ -55,13 +55,15 @@ public:
   void waitDrawClean() { m_device.waitIdle(); };
   void drawFrame();
 
+  void resize() { recreateSwapChain(); }
+
 private:
   void initWindow();
 
   void createInstance();
   void createSyncObjects();
 
-  void recordCommandBuffer(const vk::CommandBuffer &commandBuffer,
+  void recordCommandBuffer(const raii::CommandBuffer &commandBuffer,
                            uint32_t imageIndex);
 
   void createCommandBuffers();
@@ -119,6 +121,7 @@ private:
     createRenderPass();
     createGraphicsPipeline();
     createFramebuffers();
+    createCommandBuffers();
   }
 
   void populateDebugMessengerCreateInfo(
@@ -188,7 +191,7 @@ private:
 
   const std::vector<const char *> m_deviceExtensions{"VK_KHR_swapchain"};
 #ifdef NDEBUG
-  const bool m_enableValidationLayers = true;
+  const bool m_enableValidationLayers = false;
 #else
   const bool m_enableValidationLayers = false;
 #endif
@@ -198,30 +201,46 @@ private:
 class VulkanGameWindow : public QWindow {
 public:
   VulkanGameWindow()
-      :QWindow(), m_qVulkanInstance(new QVulkanInstance()), m_vulkanWindow() {
+      : QWindow(), m_qVulkanInstance(new QVulkanInstance()), m_vulkanWindow() {
     QWindow::setSurfaceType(QSurface::VulkanSurface);
   }
 
   void exposeEvent(QExposeEvent *) override {
+    spdlog::info("exposeEvent");
     if (isExposed()) {
       if (!m_initialized) {
         m_initialized = true;
         init();
         m_vulkanWindow.drawFrame();
+        requestUpdate();
       }
     }
   }
 
+  void resizeEvent(QResizeEvent *ev) override {
+    spdlog::info("resize");
+    if (m_initialized) {
+      m_vulkanWindow.resize();
+    }
+  }
+
   bool event(QEvent *e) override {
+    spdlog::info("inEvent {}",e->type());
+
     if (e->type() == QEvent::UpdateRequest) {
 
       m_vulkanWindow.drawFrame();
+      requestUpdate();
     } else if (e->type() == QEvent::Close) {
+
       m_vulkanWindow.waitDrawClean();
+    } else {
+      // do nothing
     }
+
     return QWindow::event(e);
   }
-  virtual ~VulkanGameWindow(){}
+  virtual ~VulkanGameWindow() {}
 
 private:
   //初始化vulkan 设置相关数据
@@ -235,6 +254,9 @@ private:
         [](QVulkanExtension const &extension) {
           return extension.name.toStdString();
         });
+    for (auto &extension : stdExtensions) {
+      spdlog::info(extension);
+    }
     m_vulkanWindow.initInstance(std::move(stdExtensions));
 
     auto vulkanInstance = m_vulkanWindow.getVulkanInstance();

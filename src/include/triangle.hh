@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>
-#include <vulkan/vulkan.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -724,6 +724,7 @@ private:
   }
 
   void drawFrame() {
+    spdlog::info("drawFrameStart");
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
     uint32_t imageIndex;
@@ -768,6 +769,8 @@ private:
     vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
     m_currentFrame=(m_currentFrame+1)%MAX_FRAMES_IN_FLIGHT;
+
+    spdlog::info("drawFrameend");
   }
 
   void cleanup() {

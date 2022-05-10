@@ -22,6 +22,16 @@
 //   return app.exec();
 // }
 
+// #define OLDEMU
+#ifdef OLDEMU
+#include <triangle.hh>
+
+int main(){
+  HelloTriangleApplication app;
+  app.run();
+  return 0;
+}
+#else
 #include "mainwindow.hh"
 #include <QApplication>
 #include <QPushButton>
@@ -30,6 +40,7 @@
 #include <QWindow>
 #include <iostream>
 #include <window.hh>
+
 
 int main(int argc, char *argv[]) {
   auto resultcode = 0;
@@ -52,25 +63,6 @@ int main(int argc, char *argv[]) {
 
   return EXIT_SUCCESS;
 
-  // QApplication app(argc, argv);
-
-  // QVulkanInstance instance;
-  // if(!instance.create()){
-  //   return 1;
-  // }
-
-  // QWindow *vulkanWindow = new QWindow();
-
-  // vulkanWindow->setVulkanInstance(&instance);
-
-  // MainWindow w;
-
-  // auto widget= w.centralWidget();
-
-  // auto layout = widget->layout();
-  //  layout->addWidget(QWidget::createWindowContainer(vulkanWindow));
-  // w.show();
-  // auto resultcode = app.exec();
-
-  // return resultcode;
 }
+
+#endif
