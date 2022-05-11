@@ -59,6 +59,10 @@ public:
 
   void resize() { recreateSwapChain(); }
 
+
+  ~VulkanWindow(){
+    spdlog::info("in Vulkan Window destructor");
+  }
 private:
   void initWindow();
 
@@ -160,7 +164,7 @@ private:
 
   raii::DebugUtilsMessengerEXT m_debugMessenger{nullptr};
 
-  raii::SurfaceKHR m_surface{nullptr};
+  vk::SurfaceKHR m_surface{nullptr};
   raii::PhysicalDevice m_physicalDevice{nullptr};
   raii::Device m_device{nullptr};
   raii::Queue m_graphicsQueue{nullptr};
@@ -203,7 +207,7 @@ class VulkanGameWindow : public QWindow {
 public:
   VulkanGameWindow(QVulkanInstance *qVulkanInstance)
       : QWindow(), m_qVulkanInstance(qVulkanInstance),
-        m_vulkanWindow(new VulkanWindow()) {
+        m_vulkanWindow( new VulkanWindow()) {
     QWindow::setSurfaceType(QSurface::VulkanSurface);
   }
 
@@ -227,7 +231,7 @@ public:
   }
 
   bool event(QEvent *e) override {
-    spdlog::info("inEvent {}", e->type());
+    // spdlog::info("inEvent {}", e->type());
 
     if (e->type() == QEvent::UpdateRequest) {
 
@@ -236,11 +240,15 @@ public:
     } else if (e->type() == QEvent::PlatformSurface) {
 
       auto nowEvent = dynamic_cast<QPlatformSurfaceEvent *>(e);
+
+      //删除surface 时清理和surface 相关的内容
       if (nowEvent->surfaceEventType() ==
           QPlatformSurfaceEvent::SurfaceEventType::SurfaceAboutToBeDestroyed) {
         m_vulkanWindow->waitDrawClean();
-        m_vulkanWindow->cleanup();
-        auto nowPointer = m_vulkanWindow.release();
+         m_vulkanWindow->cleanup();
+         //删除suface 才能删除vulkaninstance
+        // m_vulkanWindow.reset();
+        //auto nowPointer = m_vulkanWindow.release();
       }
     } else {
       // do nothing
@@ -248,7 +256,9 @@ public:
 
     return QWindow::event(e);
   }
-  virtual ~VulkanGameWindow() {}
+  virtual ~VulkanGameWindow() {
+    spdlog::info("in VulkanGameWindow");
+  }
 
 private:
   //初始化vulkan 设置相关数据
@@ -284,7 +294,8 @@ private:
 
 private:
   QVulkanInstance *m_qVulkanInstance;
-  std::unique_ptr<VulkanWindow> m_vulkanWindow;
+  // VulkanWindow * m_vulkanWindow;
 
+  std::unique_ptr<VulkanWindow> m_vulkanWindow;
   bool m_initialized = false;
 };

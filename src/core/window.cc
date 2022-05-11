@@ -100,7 +100,7 @@ void VulkanWindow::setupDebugMessenger() {
 
 void VulkanWindow::createSurface(const VkSurfaceKHR &surface) {
 
-  m_surface = raii::SurfaceKHR(m_instance, surface);
+  m_surface =surface;
 }
 
 void VulkanWindow::pickPhysicalDevice() {
@@ -181,7 +181,7 @@ void VulkanWindow::createSwapChain() {
   }
 
   vk::SwapchainCreateInfoKHR createInfo{};
-  createInfo.surface = *m_surface;
+  createInfo.surface = m_surface;
   createInfo.minImageCount = imageCount;
   createInfo.imageFormat = surfaceFormat.format;
   createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -634,7 +634,7 @@ VulkanWindow::findQueueFamilies(const vk::PhysicalDevice &device) {
       indices.graphicsFamily = i;
     }
 
-    auto presentSupport = device.getSurfaceSupportKHR(i, *m_surface);
+    auto presentSupport = device.getSurfaceSupportKHR(i, m_surface);
 
     spdlog::info("after get queue family{}", i);
     if (presentSupport) {
@@ -649,9 +649,9 @@ SwapChainSupportDetails
 VulkanWindow::querySwapChainSupport(const vk::PhysicalDevice &device) {
 
   SwapChainSupportDetails details;
-  details.capabilities = device.getSurfaceCapabilitiesKHR(*m_surface);
-  details.formats = device.getSurfaceFormatsKHR(*m_surface);
-  details.presentModes = device.getSurfacePresentModesKHR(*m_surface);
+  details.capabilities = device.getSurfaceCapabilitiesKHR(m_surface);
+  details.formats = device.getSurfaceFormatsKHR(m_surface);
+  details.presentModes = device.getSurfacePresentModesKHR(m_surface);
   return details;
 }
 
@@ -716,6 +716,8 @@ void VulkanWindow::cleanup() {
   m_renderFinishedSemaphores.clear();
   m_inFlightFences.clear();
 
+  m_commandBuffers.clear();
+
   m_commandPool.clear();
   m_swapChainFramebuffers.clear();
   m_graphicsPipeline.clear();
@@ -725,14 +727,4 @@ void VulkanWindow::cleanup() {
   m_swapChain.clear();
   m_device.clear();
   m_debugMessenger.clear();
-  //m_surface.clear();
-  //m_instance.clear();
-  // if (m_enableValidationLayers) {
-
-  //   // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
-  // }
-
-  // glfwDestroyWindow(m_window);
-
-  // glfwTerminate();
 }

@@ -1,37 +1,14 @@
-// #include "file.hh"
-// #include "log.hh"
-// #include "mainwindow.hh"
-// #include <QApplication>
-// #include "triangle.hh"
-// int main(int argc , char *argv[]) {
-//   const auto log = Log::GetInstance();
-//   log.info("hello world");
-//   std::string homePath = std::getenv("HOME");
-//   log.info(homePath);
-//   filesystem::path filePath = homePath + "/MARIO.NES";
-//   File file;
-//   file.Read(filePath);
-//   std::cout << file.m_header.size() << ' ' << file.m_file.size()  << ' '
-//             << file.m_trainer.size() + file.m_RPGRom.size() +
-//                    file.m_CHRRom.size();
-
-//   QApplication app(argc,argv);
-
-//   MainWindow w;
-//   w.show();
-//   return app.exec();
-// }
 
 // #define OLDEMU
-#ifdef OLDEMU
-#include <triangle.hh>
+// #ifdef OLDEMU
+// #include <triangle.hh>
 
-int main(){
-  HelloTriangleApplication app;
-  app.run();
-  return 0;
-}
-#else
+// int main(){
+//   HelloTriangleApplication app;
+//   app.run();
+//   return 0;
+// }
+// #else
 #include "mainwindow.hh"
 #include <QApplication>
 #include <QLayout>
@@ -49,7 +26,9 @@ int main(int argc, char *argv[]) {
 
     auto qVulkanInstance=std::make_unique<QVulkanInstance>();
 
-    VulkanGameWindow *vulkanGameWindow=new VulkanGameWindow(qVulkanInstance.get());
+    //auto vulkanWindow= std::make_unique<VulkanWindow>();
+    VulkanGameWindow *vulkanGameWindow=new VulkanGameWindow(qVulkanInstance.get()
+                                                            );
     MainWindow w;
 
     auto widget = w.centralWidget();
@@ -67,4 +46,4 @@ int main(int argc, char *argv[]) {
 
 }
 
-#endif
+// #endif
