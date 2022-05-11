@@ -112,7 +112,7 @@ void VulkanWindow::pickPhysicalDevice() {
   }
 
   for (const auto &device : devices) {
-    if (isDeviceSuitable(device)) {
+    if (isDeviceSuitable(*device)) {
 
       m_physicalDevice = device;
       break;
@@ -125,7 +125,7 @@ void VulkanWindow::pickPhysicalDevice() {
 }
 
 void VulkanWindow::createLogicalDevice() {
-  QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+  QueueFamilyIndices indices = findQueueFamilies(*m_physicalDevice);
 
   std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
   std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
@@ -168,7 +168,7 @@ void VulkanWindow::createLogicalDevice() {
 void VulkanWindow::createSwapChain() {
 
   SwapChainSupportDetails swapChainSupport =
-      querySwapChainSupport(m_physicalDevice);
+      querySwapChainSupport(*m_physicalDevice);
 
   auto surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
   auto presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -189,7 +189,7 @@ void VulkanWindow::createSwapChain() {
   createInfo.imageArrayLayers = 1;
   createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
-  QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+  QueueFamilyIndices indices = findQueueFamilies(*m_physicalDevice);
   uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(),
                                    indices.presentFamily.value()};
 
@@ -410,7 +410,7 @@ void VulkanWindow::createFramebuffers() {
 }
 
 void VulkanWindow::createCommandPool() {
-  QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_physicalDevice);
+  QueueFamilyIndices queueFamilyIndices = findQueueFamilies(*m_physicalDevice);
 
   vk::CommandPoolCreateInfo poolInfo{};
   poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
@@ -477,7 +477,6 @@ void VulkanWindow::drawFrame() {
   auto [acquireResult, imageIndex] = (*m_device).acquireNextImageKHR(
       *m_swapChain, seconds, *m_imageAvailableSemaphores[m_currentFrame]);
 
-
   m_commandBuffers[m_currentFrame].reset();
 
   recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
@@ -488,7 +487,7 @@ void VulkanWindow::drawFrame() {
       *m_imageAvailableSemaphores[m_currentFrame]};
   vk::PipelineStageFlags waitStages[] = {
       vk::PipelineStageFlagBits::eColorAttachmentOutput};
-  vk::CommandBuffer commandBuffers[]={*m_commandBuffers[m_currentFrame]};
+  vk::CommandBuffer commandBuffers[] = {*m_commandBuffers[m_currentFrame]};
   submitInfo.waitSemaphoreCount = 1;
   submitInfo.pWaitSemaphores = waitSemaphores;
   submitInfo.pWaitDstStageMask = waitStages;
@@ -501,7 +500,7 @@ void VulkanWindow::drawFrame() {
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
-  m_graphicsQueue.submit(submitInfo,*m_inFlightFences[m_currentFrame]);
+  m_graphicsQueue.submit(submitInfo, *m_inFlightFences[m_currentFrame]);
 
   vk::PresentInfoKHR presentInfo{};
   presentInfo.waitSemaphoreCount = 1;
@@ -521,7 +520,7 @@ void VulkanWindow::drawFrame() {
   m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-bool VulkanWindow::isDeviceSuitable(const raii::PhysicalDevice &device) {
+bool VulkanWindow::isDeviceSuitable(const vk::PhysicalDevice &device) {
   auto deviceProperties = device.getProperties();
 
   spdlog::info("{0},{1},{2}", deviceProperties.deviceName,
@@ -529,7 +528,7 @@ bool VulkanWindow::isDeviceSuitable(const raii::PhysicalDevice &device) {
 
   QueueFamilyIndices indices = findQueueFamilies(device);
 
-  bool extensionsSupported = checkDeviceExtensionSupport(*device);
+  bool extensionsSupported = checkDeviceExtensionSupport(device);
 
   bool swapChainAdequate = false;
   if (extensionsSupported) {
@@ -623,7 +622,7 @@ void VulkanWindow::recordCommandBuffer(const raii::CommandBuffer &commandBuffer,
 }
 
 QueueFamilyIndices
-VulkanWindow::findQueueFamilies(const raii::PhysicalDevice &device) {
+VulkanWindow::findQueueFamilies(const vk::PhysicalDevice &device) {
 
   QueueFamilyIndices indices;
 
@@ -647,7 +646,7 @@ VulkanWindow::findQueueFamilies(const raii::PhysicalDevice &device) {
 }
 
 SwapChainSupportDetails
-VulkanWindow::querySwapChainSupport(const raii::PhysicalDevice &device) {
+VulkanWindow::querySwapChainSupport(const vk::PhysicalDevice &device) {
 
   SwapChainSupportDetails details;
   details.capabilities = device.getSurfaceCapabilitiesKHR(*m_surface);
@@ -713,10 +712,25 @@ VulkanWindow::createShaderModule(const std::vector<char> &code) {
 
 void VulkanWindow::cleanup() {
 
-  if (m_enableValidationLayers) {
+  m_imageAvailableSemaphores.clear();
+  m_renderFinishedSemaphores.clear();
+  m_inFlightFences.clear();
 
-    // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
-  }
+  m_commandPool.clear();
+  m_swapChainFramebuffers.clear();
+  m_graphicsPipeline.clear();
+  m_pipelineLayout.clear();
+  m_renderPass.clear();
+  m_swapChainImageViews.clear();
+  m_swapChain.clear();
+  m_device.clear();
+  m_debugMessenger.clear();
+  //m_surface.clear();
+  //m_instance.clear();
+  // if (m_enableValidationLayers) {
+
+  //   // m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger);
+  // }
 
   // glfwDestroyWindow(m_window);
 

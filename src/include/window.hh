@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include <QPlatformSurfaceEvent>
 #include <QVulkanInstance>
 #include <QWindow>
 namespace raii = vk::raii;
@@ -53,6 +54,7 @@ public:
   void initVulkanOther(const VkSurfaceKHR &surface);
   VkInstance getVulkanInstance() { return *m_instance; }
   void waitDrawClean() { m_device.waitIdle(); };
+  void cleanup();
   void drawFrame();
 
   void resize() { recreateSwapChain(); }
@@ -95,22 +97,20 @@ private:
 
   void pickPhysicalDevice();
 
-  bool isDeviceSuitable(const raii::PhysicalDevice &device);
+  bool isDeviceSuitable(const vk::PhysicalDevice &device);
 
   bool checkDeviceExtensionSupport(const vk::PhysicalDevice &device);
 
   //寻找当前设备支持的队列列表 图形队列列表和presentFamily
-  QueueFamilyIndices findQueueFamilies(const raii::PhysicalDevice &device);
+  QueueFamilyIndices findQueueFamilies(const vk::PhysicalDevice &device);
 
   SwapChainSupportDetails
-  querySwapChainSupport(const raii::PhysicalDevice &device);
+  querySwapChainSupport(const vk::PhysicalDevice &device);
 
   void mainLoop() {
     drawFrame();
     m_device.waitIdle();
   }
-
-  void cleanup();
 
   std::vector<const char *> getRequiredExtensions();
 
@@ -160,10 +160,10 @@ private:
 
   raii::DebugUtilsMessengerEXT m_debugMessenger{nullptr};
 
+  raii::SurfaceKHR m_surface{nullptr};
   raii::PhysicalDevice m_physicalDevice{nullptr};
   raii::Device m_device{nullptr};
   raii::Queue m_graphicsQueue{nullptr};
-  raii::SurfaceKHR m_surface{nullptr};
   raii::Queue m_presentQueue{nullptr};
   raii::SwapchainKHR m_swapChain{nullptr};
   std::vector<vk::Image> m_swapChainImages;
@@ -193,15 +193,17 @@ private:
 #ifdef NDEBUG
   const bool m_enableValidationLayers = false;
 #else
-  const bool m_enableValidationLayers = false;
+  const bool m_enableValidationLayers = true;
 #endif
 };
 
 /*游戏窗口主要显示的window*/
 class VulkanGameWindow : public QWindow {
+
 public:
-  VulkanGameWindow()
-      : QWindow(), m_qVulkanInstance(new QVulkanInstance()), m_vulkanWindow() {
+  VulkanGameWindow(QVulkanInstance *qVulkanInstance)
+      : QWindow(), m_qVulkanInstance(qVulkanInstance),
+        m_vulkanWindow(new VulkanWindow()) {
     QWindow::setSurfaceType(QSurface::VulkanSurface);
   }
 
@@ -211,7 +213,7 @@ public:
       if (!m_initialized) {
         m_initialized = true;
         init();
-        m_vulkanWindow.drawFrame();
+        m_vulkanWindow->drawFrame();
         requestUpdate();
       }
     }
@@ -220,20 +222,26 @@ public:
   void resizeEvent(QResizeEvent *ev) override {
     spdlog::info("resize");
     if (m_initialized) {
-      m_vulkanWindow.resize();
+      m_vulkanWindow->resize();
     }
   }
 
   bool event(QEvent *e) override {
-    spdlog::info("inEvent {}",e->type());
+    spdlog::info("inEvent {}", e->type());
 
     if (e->type() == QEvent::UpdateRequest) {
 
-      m_vulkanWindow.drawFrame();
+      m_vulkanWindow->drawFrame();
       requestUpdate();
-    } else if (e->type() == QEvent::Close) {
+    } else if (e->type() == QEvent::PlatformSurface) {
 
-      m_vulkanWindow.waitDrawClean();
+      auto nowEvent = dynamic_cast<QPlatformSurfaceEvent *>(e);
+      if (nowEvent->surfaceEventType() ==
+          QPlatformSurfaceEvent::SurfaceEventType::SurfaceAboutToBeDestroyed) {
+        m_vulkanWindow->waitDrawClean();
+        m_vulkanWindow->cleanup();
+        auto nowPointer = m_vulkanWindow.release();
+      }
     } else {
       // do nothing
     }
@@ -257,9 +265,9 @@ private:
     for (auto &extension : stdExtensions) {
       spdlog::info(extension);
     }
-    m_vulkanWindow.initInstance(std::move(stdExtensions));
+    m_vulkanWindow->initInstance(std::move(stdExtensions));
 
-    auto vulkanInstance = m_vulkanWindow.getVulkanInstance();
+    auto vulkanInstance = m_vulkanWindow->getVulkanInstance();
 
     //设置VulkanInstance 以便创建QWindow
     m_qVulkanInstance->setVkInstance(vulkanInstance);
@@ -271,12 +279,12 @@ private:
 
     //获取surface 以便初始化其他部分
     auto surface = QVulkanInstance::surfaceForWindow(this);
-    m_vulkanWindow.initVulkanOther(surface);
+    m_vulkanWindow->initVulkanOther(surface);
   }
 
 private:
   QVulkanInstance *m_qVulkanInstance;
-  VulkanWindow m_vulkanWindow;
+  std::unique_ptr<VulkanWindow> m_vulkanWindow;
 
   bool m_initialized = false;
 };

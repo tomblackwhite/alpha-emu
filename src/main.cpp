@@ -34,9 +34,9 @@ int main(){
 #else
 #include "mainwindow.hh"
 #include <QApplication>
-#include <QPushButton>
-#include <QVBoxLayout>
+#include <QLayout>
 #include <QVulkanInstance>
+#include <memory>
 #include <QWindow>
 #include <iostream>
 #include <window.hh>
@@ -47,7 +47,9 @@ int main(int argc, char *argv[]) {
   try {
     QApplication app(argc, argv);
 
-    VulkanGameWindow *vulkanGameWindow=new VulkanGameWindow();
+    auto qVulkanInstance=std::make_unique<QVulkanInstance>();
+
+    VulkanGameWindow *vulkanGameWindow=new VulkanGameWindow(qVulkanInstance.get());
     MainWindow w;
 
     auto widget = w.centralWidget();
