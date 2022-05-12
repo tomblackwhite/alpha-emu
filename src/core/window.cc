@@ -111,10 +111,10 @@ void VulkanWindow::pickPhysicalDevice() {
     throw std::runtime_error("failed to find GPUs with Vulkan support!");
   }
 
-  for (const auto &device : devices) {
+  for (auto &device : devices) {
     if (isDeviceSuitable(*device)) {
 
-      m_physicalDevice = device;
+      m_physicalDevice = std::move(device);
       break;
     }
   }
@@ -537,8 +537,11 @@ bool VulkanWindow::isDeviceSuitable(const vk::PhysicalDevice &device) {
                         !swapChainSupport.presentModes.empty();
   }
 
+
   return indices.isComplete() && extensionsSupported && swapChainAdequate &&
-         deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+         (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu
+          ||deviceProperties.deviceType==vk::PhysicalDeviceType::eIntegratedGpu);
+
 }
 
 bool VulkanWindow::checkDeviceExtensionSupport(
