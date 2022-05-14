@@ -59,10 +59,8 @@ public:
 
   void resize() { recreateSwapChain(); }
 
+  ~VulkanWindow() { spdlog::info("in Vulkan Window destructor"); }
 
-  ~VulkanWindow(){
-    spdlog::info("in Vulkan Window destructor");
-  }
 private:
   void initWindow();
 
@@ -207,7 +205,7 @@ class VulkanGameWindow : public QWindow {
 public:
   VulkanGameWindow(QVulkanInstance *qVulkanInstance)
       : QWindow(), m_qVulkanInstance(qVulkanInstance),
-        m_vulkanWindow( new VulkanWindow()) {
+        m_vulkanWindow(new VulkanWindow()) {
     QWindow::setSurfaceType(QSurface::VulkanSurface);
   }
 
@@ -233,32 +231,36 @@ public:
   bool event(QEvent *e) override {
     // spdlog::info("inEvent {}", e->type());
 
-    if (e->type() == QEvent::UpdateRequest) {
+    try {
 
-      m_vulkanWindow->drawFrame();
-      requestUpdate();
-    } else if (e->type() == QEvent::PlatformSurface) {
+      if (e->type() == QEvent::UpdateRequest) {
 
-      auto nowEvent = dynamic_cast<QPlatformSurfaceEvent *>(e);
+        m_vulkanWindow->drawFrame();
+        requestUpdate();
+      } else if (e->type() == QEvent::PlatformSurface) {
 
-      //删除surface 时清理和surface 相关的内容
-      if (nowEvent->surfaceEventType() ==
-          QPlatformSurfaceEvent::SurfaceEventType::SurfaceAboutToBeDestroyed) {
-        m_vulkanWindow->waitDrawClean();
-         m_vulkanWindow->cleanup();
-         //删除suface 才能删除vulkaninstance
-        // m_vulkanWindow.reset();
-        //auto nowPointer = m_vulkanWindow.release();
+        auto nowEvent = dynamic_cast<QPlatformSurfaceEvent *>(e);
+
+        //删除surface 时清理和surface 相关的内容
+        if (nowEvent->surfaceEventType() ==
+            QPlatformSurfaceEvent::SurfaceEventType::
+                SurfaceAboutToBeDestroyed) {
+          m_vulkanWindow->waitDrawClean();
+          m_vulkanWindow->cleanup();
+          //删除suface 才能删除vulkaninstance
+          // m_vulkanWindow.reset();
+          // auto nowPointer = m_vulkanWindow.release();
+        }
+      } else {
+        // do nothing
       }
-    } else {
-      // do nothing
+    }catch(const std::exception &e){
+      spdlog::error(e.what());
     }
 
     return QWindow::event(e);
   }
-  virtual ~VulkanGameWindow() {
-    spdlog::info("in VulkanGameWindow");
-  }
+  virtual ~VulkanGameWindow() { spdlog::info("in VulkanGameWindow"); }
 
 private:
   //初始化vulkan 设置相关数据

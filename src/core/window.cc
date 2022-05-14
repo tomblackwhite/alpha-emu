@@ -100,7 +100,7 @@ void VulkanWindow::setupDebugMessenger() {
 
 void VulkanWindow::createSurface(const VkSurfaceKHR &surface) {
 
-  m_surface =surface;
+  m_surface = surface;
 }
 
 void VulkanWindow::pickPhysicalDevice() {
@@ -477,6 +477,14 @@ void VulkanWindow::drawFrame() {
   auto [acquireResult, imageIndex] = (*m_device).acquireNextImageKHR(
       *m_swapChain, seconds, *m_imageAvailableSemaphores[m_currentFrame]);
 
+  if (acquireResult == vk::Result::eErrorOutOfDateKHR) {
+    recreateSwapChain();
+    return;
+  } else if (acquireResult != vk::Result::eSuccess &&
+             acquireResult != vk::Result::eSuboptimalKHR) {
+    spdlog::error("failed to acquire swap chain image");
+  }
+
   m_commandBuffers[m_currentFrame].reset();
 
   recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
@@ -511,15 +519,23 @@ void VulkanWindow::drawFrame() {
   presentInfo.pImageIndices = &imageIndex;
 
   presentInfo.pResults = nullptr;
-  auto presentQueueResult = m_presentQueue.presentKHR(presentInfo);
-  if (presentQueueResult != vk::Result::eSuboptimalKHR &&
-      presentQueueResult != vk::Result::eSuccess) {
-    spdlog::warn("present Error");
+
+  try {
+    auto presentQueueResult = m_presentQueue.presentKHR(presentInfo);
+
+  } catch (const std::system_error &system) {
+    auto code = system.code();
+    auto errorCode = static_cast<vk::Result>(code.value());
+    if (errorCode == vk::Result::eErrorOutOfDateKHR ||
+        errorCode == vk::Result::eSuboptimalKHR) {
+      recreateSwapChain();
+    } else if (errorCode != vk::Result::eSuccess) {
+      spdlog::error("failed to acquire swap chain image");
+    }
+
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }
-
-  m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
-
 bool VulkanWindow::isDeviceSuitable(const vk::PhysicalDevice &device) {
   auto deviceProperties = device.getProperties();
 
@@ -537,11 +553,10 @@ bool VulkanWindow::isDeviceSuitable(const vk::PhysicalDevice &device) {
                         !swapChainSupport.presentModes.empty();
   }
 
-
   return indices.isComplete() && extensionsSupported && swapChainAdequate &&
-         (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu
-          ||deviceProperties.deviceType==vk::PhysicalDeviceType::eIntegratedGpu);
-
+         (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu ||
+          deviceProperties.deviceType ==
+              vk::PhysicalDeviceType::eIntegratedGpu);
 }
 
 bool VulkanWindow::checkDeviceExtensionSupport(
