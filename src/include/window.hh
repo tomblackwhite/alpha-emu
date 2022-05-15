@@ -3,11 +3,8 @@
 
 #include <cstdint>
 #define VULKAN_HPP_NO_CONSTRUCTORS
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_raii.hpp>
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <fstream>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <iterator>
 #include <optional>
@@ -16,10 +13,13 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 #include <QPlatformSurfaceEvent>
 #include <QVulkanInstance>
 #include <QWindow>
+
 namespace raii = vk::raii;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -36,6 +36,37 @@ struct SwapChainSupportDetails {
   vk::SurfaceCapabilitiesKHR capabilities;
   std::vector<vk::SurfaceFormatKHR> formats;
   std::vector<vk::PresentModeKHR> presentModes;
+};
+
+//顶点
+struct Vertex {
+  glm::vec2 pos;
+  glm::vec3 color;
+
+  static vk::VertexInputBindingDescription getBindingDescription() {
+    vk::VertexInputBindingDescription bindingDescription{
+        .binding = 0,
+        .stride = sizeof(Vertex),
+        .inputRate = vk::VertexInputRate::eVertex};
+    return bindingDescription;
+  }
+
+  static std::array<vk::VertexInputAttributeDescription, 2>
+  getAttributeDescriptions() {
+    std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions{};
+
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = ::vk::Format::eR32G32Sfloat;
+    attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = ::vk::Format::eR32G32B32Sfloat;
+    attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+    return attributeDescriptions;
+  }
 };
 
 class VulkanWindow {
@@ -74,6 +105,15 @@ private:
 
   void createCommandPool();
 
+  void createVertexBuffer();
+
+  void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                    vk::MemoryPropertyFlags properties, raii::Buffer &buffer,
+                    raii::DeviceMemory &bufferMemory);
+
+  void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer,
+                  vk::DeviceSize size);
+
   void createFramebuffers();
 
   void createRenderPass();
@@ -109,12 +149,15 @@ private:
   SwapChainSupportDetails
   querySwapChainSupport(const vk::PhysicalDevice &device);
 
-  void mainLoop() {
-    drawFrame();
-    m_device.waitIdle();
-  }
+  uint32_t findMemoryType(uint32_t typeFilter,
+                          const vk::MemoryPropertyFlags &properties);
 
-  std::vector<const char *> getRequiredExtensions();
+  // void mainLoop() {
+  //   drawFrame();
+  //   m_device.waitIdle();
+  // }
+
+  // std::vector<const char *> getRequiredExtensions();
 
   void recreateSwapChain() {
     m_device.waitIdle();
@@ -157,6 +200,7 @@ private:
     return VK_FALSE;
   }
 
+private:
   raii::Context m_context;
   raii::Instance m_instance{nullptr};
 
@@ -168,6 +212,12 @@ private:
   raii::Queue m_graphicsQueue{nullptr};
   raii::Queue m_presentQueue{nullptr};
   raii::SwapchainKHR m_swapChain{nullptr};
+
+  raii::Buffer m_vertexBuffer{nullptr};
+  raii::DeviceMemory m_vertexBufferMemory{nullptr};
+  // raii::Buffer m_stagingBuffer{nullptr};
+  // raii::DeviceMemory m_stagingBufferMemory{nullptr};
+
   std::vector<vk::Image> m_swapChainImages;
   vk::Format m_swapChainImageFormat;
   vk::Extent2D m_swapChainExtent;
@@ -177,10 +227,15 @@ private:
   raii::Pipeline m_graphicsPipeline{nullptr};
   std::vector<raii::Framebuffer> m_swapChainFramebuffers;
   raii::CommandPool m_commandPool{nullptr};
+
   std::vector<raii::CommandBuffer> m_commandBuffers;
   std::vector<raii::Semaphore> m_imageAvailableSemaphores;
   std::vector<raii::Semaphore> m_renderFinishedSemaphores;
   std::vector<raii::Fence> m_inFlightFences;
+
+  const std::vector<Vertex> m_vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+                                          {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                                          {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
   uint32_t m_currentFrame = 0;
   QWindow *m_window{nullptr};
@@ -254,7 +309,7 @@ public:
       } else {
         // do nothing
       }
-    }catch(const std::exception &e){
+    } catch (const std::exception &e) {
       spdlog::error(e.what());
     }
 

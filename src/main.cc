@@ -24,17 +24,19 @@ int main(int argc, char *argv[]) {
   try {
     QApplication app(argc, argv);
 
+    spdlog::info(app.applicationDirPath().toStdString());
+
     auto qVulkanInstance=std::make_unique<QVulkanInstance>();
 
     //auto vulkanWindow= std::make_unique<VulkanWindow>();
-    VulkanGameWindow *vulkanGameWindow=new VulkanGameWindow(qVulkanInstance.get()
+    auto vulkanGameWindow= std::make_unique<VulkanGameWindow>(qVulkanInstance.get()
                                                             );
     MainWindow w;
 
-    auto widget = w.centralWidget();
+    auto *widget = w.centralWidget();
 
-    auto layout = widget->layout();
-    layout->addWidget(QWidget::createWindowContainer(vulkanGameWindow));
+    auto *layout = widget->layout();
+    layout->addWidget(QWidget::createWindowContainer(vulkanGameWindow.release()));
     w.show();
     resultcode = app.exec();
   } catch (const std::exception &e) {
@@ -42,8 +44,11 @@ int main(int argc, char *argv[]) {
     return resultcode;
   }
 
+
   return EXIT_SUCCESS;
 
 }
+
+
 
 // #endif

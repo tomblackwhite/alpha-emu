@@ -24,6 +24,7 @@ void VulkanWindow::initVulkanOther(const VkSurfaceKHR &surface) {
   createGraphicsPipeline();
   createFramebuffers();
   createCommandPool();
+  createVertexBuffer();
   createCommandBuffers();
   createSyncObjects();
 }
@@ -296,6 +297,10 @@ void VulkanWindow::createGraphicsPipeline() {
                                                       fragShaderStageInfo};
 
   vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+  auto bindingDescription = Vertex::getBindingDescription();
+  auto attributeDescription = Vertex::getAttributeDescriptions();
+  vertexInputInfo.setVertexBindingDescriptions(bindingDescription);
+  vertexInputInfo.setVertexAttributeDescriptions(attributeDescription);
 
   vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
   inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
@@ -593,20 +598,20 @@ bool VulkanWindow::checkValidationLayerSupport() {
   return true;
 }
 
-std::vector<const char *> VulkanWindow::getRequiredExtensions() {
-  uint32_t glfwExtensionCount = 0;
-  const char **glfwExtensions;
-  glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+// std::vector<const char *> VulkanWindow::getRequiredExtensions() {
+//   uint32_t glfwExtensionCount = 0;
+//   const char **glfwExtensions;
+//   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-  std::vector<const char *> extensions(glfwExtensions,
-                                       glfwExtensions + glfwExtensionCount);
+//   std::vector<const char *> extensions(glfwExtensions,
+//                                        glfwExtensions + glfwExtensionCount);
 
-  if (m_enableValidationLayers) {
-    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-  }
+//   if (m_enableValidationLayers) {
+//     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+//   }
 
-  return extensions;
-}
+//   return extensions;
+// }
 
 void VulkanWindow::recordCommandBuffer(const raii::CommandBuffer &commandBuffer,
                                        uint32_t imageIndex) {
@@ -632,7 +637,11 @@ void VulkanWindow::recordCommandBuffer(const raii::CommandBuffer &commandBuffer,
   commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                              *m_graphicsPipeline);
-  commandBuffer.draw(3, 1, 0, 0);
+
+  vk::Buffer vertexBuffers[] = {*m_vertexBuffer};
+  vk::DeviceSize offsets[] = {0};
+  commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
+  commandBuffer.draw(static_cast<uint32_t>(m_vertices.size()), 1, 0, 0);
 
   commandBuffer.endRenderPass();
 
@@ -743,6 +752,104 @@ void VulkanWindow::cleanup() {
   m_renderPass.clear();
   m_swapChainImageViews.clear();
   m_swapChain.clear();
-  m_device.clear();
-  m_debugMessenger.clear();
+  // m_device.clear();
+  // m_debugMessenger.clear();
+}
+
+void VulkanWindow::createVertexBuffer() {
+  auto size =
+      static_cast<vk::DeviceSize>(sizeof(m_vertices[0]) * m_vertices.size());
+
+  raii::Buffer stagingBuffer{nullptr};
+  raii::DeviceMemory stagingBufferMemory{nullptr};
+
+  createBuffer(size, vk::BufferUsageFlagBits::eTransferSrc,
+               vk::MemoryPropertyFlagBits::eHostVisible |
+                   vk::MemoryPropertyFlagBits::eHostCoherent,
+               stagingBuffer, stagingBufferMemory);
+
+  //填充buffer数据
+  auto data = (*m_device).mapMemory(*stagingBufferMemory, 0, size);
+  std::memcpy(data, m_vertices.data(), static_cast<size_t>(size));
+  (*m_device).unmapMemory(*stagingBufferMemory);
+
+  createBuffer(size, vk::BufferUsageFlagBits::eTransferDst|vk::BufferUsageFlagBits::eVertexBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+               m_vertexBuffer, m_vertexBufferMemory);
+
+  copyBuffer(*stagingBuffer, *m_vertexBuffer, size);
+}
+
+uint32_t
+VulkanWindow::findMemoryType(uint32_t typeFilter,
+                             const vk::MemoryPropertyFlags &properties) {
+  auto memProperties = m_physicalDevice.getMemoryProperties();
+
+  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (i << i)) && (memProperties.memoryTypes[i].propertyFlags &
+                                    properties) == properties) {
+      return i;
+    }
+  }
+  return 0;
+  spdlog::error("failed to find suitable memory type!");
+}
+
+void VulkanWindow::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                vk::MemoryPropertyFlags properties,
+                                raii::Buffer &buffer,
+                                raii::DeviceMemory &bufferMemory) {
+  vk::BufferCreateInfo bufferInfo{};
+  bufferInfo.size = size;
+  bufferInfo.usage = usage;
+  bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+  buffer = m_device.createBuffer(bufferInfo);
+
+  //获取buffer 需要的类型;
+  vk::DeviceBufferMemoryRequirements info{};
+  info.setPCreateInfo(&bufferInfo);
+  auto memRequirements =
+      (*m_device).getBufferMemoryRequirements(*buffer);
+
+  vk::MemoryAllocateInfo allocInfo{};
+  allocInfo.setAllocationSize(memRequirements.size);
+  allocInfo.memoryTypeIndex =
+      findMemoryType(memRequirements.memoryTypeBits,
+                     properties);
+
+  //分配设备内存
+  bufferMemory = m_device.allocateMemory(allocInfo);
+
+  vk::BindBufferMemoryInfo bindInfo{};
+
+  bindInfo.buffer = *buffer;
+  bindInfo.memory = *bufferMemory;
+  bindInfo.setMemoryOffset(0);
+
+  m_device.bindBufferMemory2(bindInfo);
+}
+
+
+void VulkanWindow::copyBuffer(vk::Buffer srcBuffer,vk::Buffer dstBuffer,vk::DeviceSize size){
+  vk::CommandBufferAllocateInfo allocInfo{};
+  allocInfo.level = vk::CommandBufferLevel::ePrimary;
+  allocInfo.commandPool=*m_commandPool;
+  allocInfo.commandBufferCount=1;
+  auto commandBuffers= m_device.allocateCommandBuffers(allocInfo);
+
+  vk::CommandBufferBeginInfo beginInfo{};
+  beginInfo.flags=vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+
+  commandBuffers[0].begin(beginInfo);
+  vk::BufferCopy copyRegion{};
+  copyRegion.size=size;
+  commandBuffers[0].copyBuffer(srcBuffer, dstBuffer, copyRegion);
+  commandBuffers[0].end();
+
+  vk::SubmitInfo submitInfo{};
+  submitInfo.setCommandBuffers(*commandBuffers[0]);
+  m_graphicsQueue.submit(submitInfo);
+  m_graphicsQueue.waitIdle();
+
 }
