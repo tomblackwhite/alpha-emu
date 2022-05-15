@@ -38,7 +38,7 @@ file(
 add_library(ui ${ui_src})
 target_include_directories(ui PUBLIC "./include")
 target_link_libraries(ui PUBLIC Qt5::Widgets)
-add_executable(alpha-emu main.cpp)
+add_executable(alpha-emu main.cc)
 
 
 target_include_directories(alpha-emu PUBLIC "./ui")
